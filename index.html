@@ -113,7 +113,28 @@ const SUPABASE_ANON_KEY='sb_publishable_sYiVppdzvZbXGyIHs7f5mQ_VRITtD6q';
 let toastTimer;
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),2600)}
 function toggleLike(btn){const post=btn.closest('.post'),count=post.querySelector('.likes-count');const liked=btn.classList.toggle('liked');btn.textContent=liked?'♥ Gostaste':'♡ Gostar';btn.setAttribute('aria-pressed',liked);count.textContent=Number(count.textContent)+(liked?1:-1)}
-async function publishPost(){const input=document.getElementById('postInput'),v=input.value.trim();if(!v){showToast('Escreve alguma coisa antes de publicar.');input.focus();return}if(!sb)return;const{error}=await sb.from('posts').insert({body:v});if(error)return showToast('Não foi possível publicar.');input.value='';showToast('Publicação publicada!');loadFeed()}
+async function publishPost(){
+  const input=document.getElementById('postInput');
+  const body=input.value.trim();
+  if(!body){showToast('Escreve alguma coisa antes de publicar.');input.focus();return}
+  if(!sb){showToast('Supabase não está configurado.');return}
+  const {data:{user},error:userError}=await sb.auth.getUser();
+  if(userError||!user){showToast('Entra na tua conta antes de publicar.');return}
+  const btn=document.querySelector('.composer .publish');
+  if(btn){btn.disabled=true;btn.textContent='A publicar…'}
+  try{
+    const {error}=await sb.from('posts').insert({body:body,author_id:user.id});
+    if(error){console.error('Erro ao publicar:',error);showToast('Erro ao publicar: '+(error.message||'verifica as permissões da tabela posts.'));return}
+    input.value='';
+    showToast('Publicação publicada!');
+    await loadFeed();
+  }catch(err){
+    console.error('Erro inesperado ao publicar:',err);
+    showToast('Ocorreu um erro ao publicar. Tenta novamente.');
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent='Publicar ↗'}
+  }
+}
 document.querySelectorAll('.nav button[data-tab]').forEach(btn=>btn.addEventListener('click',()=>{document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active'));btn.classList.add('active');go(btn.dataset.tab)}))
 function mobileTab(btn,tab){document.querySelectorAll('.mobile-nav button').forEach(b=>b.classList.remove('active'));btn.classList.add('active');if(tab==='Publicar'){go('Início',1);document.getElementById('postInput').focus();document.getElementById('postInput').scrollIntoView({behavior:'smooth',block:'center'})}else go(tab)}
 document.getElementById('postInput').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();publishPost()}});
@@ -159,9 +180,66 @@ function errMsg(e){const m=(e.message||'').toLowerCase();if(m.includes('invalid 
 function postEl(p){const au=p.author||{full_name:'Utilizador',username:'utilizador'},liked=LIKED.has(p.id),a=document.createElement('article');a.className='post';
 a.innerHTML=`<div class="post-head"><div class="avatar green">${esc(ini(au.full_name))}</div><div class="person"><strong>${esc(au.full_name)}</strong><small>@${esc(au.username)} · ${ago(p.created_at)}</small></div></div><p class="post-text"></p><div class="post-stats"><span>♡ <span class="likes-count">${p.likes&&p.likes[0]?p.likes[0].count:0}</span> gostos</span></div><div class="post-actions"><button class="like-btn${liked?' liked':''}" aria-pressed="${liked}">${liked?'♥ Gostaste':'♡ Gostar'}</button><button>▢ Comentar</button></div>`;
 a.querySelector('.post-text').textContent=p.body;
-a.querySelector('.like-btn').onclick=async function(){const on=!this.classList.contains('liked');toggleLike(this);const{error}=on?await sb.from('likes').insert({post_id:p.id}):await sb.from('likes').delete().match({post_id:p.id,user_id:ME.id});if(error){toggleLike(this);showToast('Não foi possível guardar o gosto.')}else if(on)LIKED.add(p.id);else LIKED.delete(p.id)};
+a.querySelector('.like-btn').onclick=async function(){
+  if(!sb||!ME.id){showToast('Entra na tua conta para gostar.');return}
+  const on=!this.classList.contains('liked');
+  const oldCount=Number(a.querySelector('.likes-count').textContent)||0;
+  toggleLike(this);
+  const result=on
+    ? await sb.from('likes').insert({post_id:p.id,user_id:ME.id})
+    : await sb.from('likes').delete().match({post_id:p.id,user_id:ME.id});
+  if(result.error){
+    this.classList.toggle('liked',!on);
+    this.textContent=on?'♡ Gostar':'♥ Gostaste';
+    this.setAttribute('aria-pressed',String(!on));
+    a.querySelector('.likes-count').textContent=oldCount;
+    console.error('Erro ao guardar gosto:',result.error);
+    showToast('Não foi possível guardar o gosto: '+result.error.message);
+  }else if(on)LIKED.add(p.id);else LIKED.delete(p.id)
+};
 a.querySelectorAll('.post-actions button')[1].onclick=()=>showToast('Comentários em breve.');return a}
-async function loadFeed(){if(!sb||!ME.id)return;const{data,error}=await sb.from('posts').select('id,author_id,body,created_at,author:profiles(username,full_name),likes(count)').order('created_at',{ascending:false}).limit(50);if(error)return showToast('Não foi possível carregar o feed.');const{data:ml}=await sb.from('likes').select('post_id').eq('user_id',ME.id);LIKED=new Set((ml||[]).map(x=>x.post_id));DB.posts=data.map(p=>({...p,t:p.body}));const f=document.getElementById('feed');f.querySelectorAll('.post').forEach(e=>e.remove());DB.posts.forEach(p=>f.append(postEl(p)));refresh()}
+async function loadFeed(){
+  if(!sb||!ME.id)return;
+  const f=document.getElementById('feed');
+  try{
+    // Buscar publicações sem depender de relações automáticas do PostgREST.
+    const {data:posts,error}=await sb.from('posts')
+      .select('id,author_id,body,created_at')
+      .order('created_at',{ascending:false}).limit(50);
+    if(error)throw error;
+    const ids=[...new Set((posts||[]).map(p=>p.author_id).filter(Boolean))];
+    let profiles=[];
+    if(ids.length){
+      const {data,error:profileError}=await sb.from('profiles')
+        .select('id,username,full_name').in('id',ids);
+      if(profileError)console.warn('Não foi possível carregar alguns perfis:',profileError);
+      profiles=data||[];
+    }
+    const postIds=(posts||[]).map(p=>p.id);
+    let likes=[];
+    if(postIds.length){
+      const {data,error:likesError}=await sb.from('likes')
+        .select('post_id,user_id').in('post_id',postIds);
+      if(likesError)console.warn('Não foi possível carregar os gostos:',likesError);
+      likes=data||[];
+    }
+    LIKED=new Set(likes.filter(x=>x.user_id===ME.id).map(x=>x.post_id));
+    const profileMap=new Map(profiles.map(p=>[p.id,p]));
+    const likeCounts=new Map();
+    likes.forEach(l=>likeCounts.set(l.post_id,(likeCounts.get(l.post_id)||0)+1));
+    DB.posts=(posts||[]).map(p=>({
+      ...p,t:p.body,
+      author:profileMap.get(p.author_id)||{full_name:'Utilizador',username:'utilizador'},
+      likes:[{count:likeCounts.get(p.id)||0}]
+    }));
+    f.querySelectorAll('.post').forEach(e=>e.remove());
+    DB.posts.forEach(p=>f.append(postEl(p)));
+    refresh();
+  }catch(error){
+    console.error('Erro ao carregar o feed:',error);
+    showToast('Erro ao carregar publicações: '+(error.message||'verifica as permissões RLS das tabelas.'));
+  }
+}
 async function onSession(session){if(!session){const was=ME.id;ME.id=null;DB.posts=[];if(chan&&sb){sb.removeChannel(chan);chan=null}document.getElementById('feed').querySelectorAll('.post').forEach(e=>e.remove());refresh();document.body.classList.add('guest');amode('in');scrollTo(0,0);if(was)showToast('Sessão terminada.');return}
 ME.id=session.user.id;const{data:p}=await sb.from('profiles').select('username,full_name').eq('id',ME.id).maybeSingle();const m=session.user.user_metadata||{};enter(p?.full_name||m.full_name||'Utilizador',p?.username||m.username||'utilizador');loadFeed();if(!chan)chan=sb.channel('feed').on('postgres_changes',{event:'*',schema:'public',table:'posts'},()=>loadFeed()).subscribe()}
 if(sb)sb.auth.onAuthStateChange((ev,session)=>{if(ev==='SIGNED_IN'&&session&&ME.id===session.user.id)return;if(ev==='INITIAL_SESSION'||ev==='SIGNED_IN'||ev==='SIGNED_OUT')setTimeout(()=>onSession(session),0)});

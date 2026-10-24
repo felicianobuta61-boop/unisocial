@@ -59,6 +59,12 @@ body.guest .app,body.guest .mobile-nav{display:none}body:not(.guest) #auth{displ
 .pmedia{display:block;width:100%;max-height:480px;object-fit:contain;border-radius:14px;margin:10px 0;background:#000}
 #mprev{display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap;margin-top:12px}#mprev[hidden]{display:none}.mp{position:relative}.mp img,.mp video{display:block;max-width:100%;max-height:200px;border-radius:14px;background:#000}.mp .chip{position:absolute;top:6px;right:6px;background:#000a;color:#fff}
 .fpick{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}.fpick[hidden]{display:none}.fpick button{background:var(--panel2);border:1px solid var(--line);border-radius:20px;padding:8px 12px;font-size:13px;color:var(--text)}
+.lb-body{flex:1;overflow:auto;display:flex;min-height:0}.lb-body img{max-width:100%;max-height:100%;object-fit:contain;margin:auto;cursor:zoom-in}.lb-body img.zoom{max-width:none;max-height:none;width:220%;cursor:zoom-out}
+.story-wrap{position:relative;width:65px;margin:0 auto}.story-wrap .story-ring{margin-bottom:8px}.splus{position:absolute;right:-3px;bottom:8px;width:22px;height:22px;border-radius:50%;background:var(--lime);color:#111;font-size:15px;font-weight:900;display:grid;place-items:center;border:2px solid var(--bg);line-height:1}
+.snote{max-width:92px;margin:0 auto 6px;background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:4px 8px;font-size:11px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.snote[hidden]{display:none}
+#mytile .story-inner{background:linear-gradient(135deg,#282b44,#151b28);color:#fff}.story-ring.plain{background:#303749}
+.avatar.ring{box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--lime)}.avatar.ring.ring-seen{box-shadow:0 0 0 2px var(--bg),0 0 0 4px #303749}
+.nb{display:flex;align-items:center;gap:10px;padding:12px 14px;margin-bottom:14px;font-size:13px}.nb[hidden]{display:none}.nb span{flex:1}
 </style>
 </head>
 <body class="guest">
@@ -83,8 +89,9 @@ body.guest .app,body.guest .mobile-nav{display:none}body:not(.guest) #auth{displ
   <header class="topbar"><div><div class="eyebrow">O teu mundo, conectado</div><h1 id="ttl">Olá! 👋</h1></div><div class="top-actions"><button class="round" aria-label="Pesquisar" onclick="go('Explorar')">⌕</button><button class="round" aria-label="Notificações" onclick="bell()">🔔<span class="dot" id="bdot" hidden></span></button></div></header>
   <div class="view on" id="v-home"><input class="search" type="search" id="mobileSearch" aria-label="Pesquisar" placeholder="⌕  Pesquisa pessoas, publicações e grupos...">
   <section class="stories">
-    <div class="story" role="button" tabindex="0" onclick="scOpen()"><div class="story-ring"><div class="story-inner">＋</div></div><div class="story-name">A tua história</div></div>
+    <div class="story" id="mytile" role="button" tabindex="0" onclick="myTile()"><div class="snote" hidden></div><div class="story-wrap"><div class="story-ring plain"><div class="story-inner">＋</div></div><span class="splus" role="button" aria-label="Criar história" onclick="event.stopPropagation();scOpen()">＋</span></div><div class="story-name">A tua história</div></div>
   </section>
+  <div class="widget nb" id="nbanner" hidden><span>🔔 Ativa as notificações para saberes quando recebes mensagens.</span><button class="chip on" onclick="notifAsk()">Ativar</button><button class="chip" aria-label="Agora não" onclick="nbHide()">✕</button></div>
   <section class="composer">
     <div class="composer-top"><div class="avatar green">TU</div><input id="postInput" placeholder="O que queres partilhar hoje?" maxlength="240"></div>
     <div class="composer-actions"><div class="tools"><button onclick="document.getElementById('pm-i').click()">▧ Foto</button><button onclick="document.getElementById('pm-v').click()">▷ Vídeo</button><button onclick="fpToggle()">☺ Sentimento</button><input type="file" id="pm-i" accept="image/*" hidden onchange="pmPick(this,'image')"><input type="file" id="pm-v" accept="video/mp4,video/webm,video/quicktime,video/*" hidden onchange="pmPick(this,'video')"></div><button class="publish" onclick="publishPost()">Publicar ↗</button></div>
@@ -132,6 +139,7 @@ body.guest .app,body.guest .mobile-nav{display:none}body:not(.guest) #auth{displ
 <div style="display:flex;gap:8px;align-items:center;padding:0 14px 10px;flex-wrap:wrap"><button class="chip" onclick="document.getElementById('sf').click()">▧ Foto</button><input type="file" id="sf" accept="image/*" hidden onchange="scPhoto(this)"><button class="chip" onclick="scText()">Aa Texto</button><span id="scsw" style="display:flex;gap:6px"></span></div>
 <div style="padding:0 14px 14px"><button class="publish" id="scbtn" style="width:100%;padding:14px" onclick="scPost()">Publicar história</button></div>
 </div>
+<div class="ov" id="lb" hidden><div class="sv-head" style="justify-content:flex-end"><button class="chip" onclick="closePhoto()" aria-label="Fechar">✕</button></div><div class="lb-body" onclick="if(event.target===this)closePhoto()"><img id="lbimg" alt="" onclick="this.classList.toggle('zoom')"></div></div>
 <div class="toast" id="toast"></div>
 <script>
 // ===== CONFIGURAÇÃO DO SUPABASE (Project Settings > API) =====
@@ -198,7 +206,7 @@ Histórias:()=>`<div class="grid"><div class="story" onclick="showToast('As hist
 Vídeos:()=>emp('Ainda não há vídeos.<br>Os vídeos publicados aparecem aqui.'),
 Grupos:()=>`<div class="widget"><div class="composer-top"><input id="gn" class="gi" placeholder="Nome do novo grupo" maxlength="40" onkeydown="if(event.key==='Enter')mkg()"><button class="publish" onclick="mkg()">Criar grupo</button></div></div>`+(DB.groups.length?`<div class="widget">${DB.groups.map(g=>`<div class="contact"><div class="avatar purple">${esc(g[0])}</div><div class="contact-info"><strong>${esc(g)}</strong><small>1 membro · tu</small></div></div>`).join('')}</div>`:emp('Ainda não pertences a nenhum grupo.<br>Cria o primeiro!')),
 Guardados:()=>emp('Ainda não guardaste nada.'),
-Definições:()=>`<div class="widget">${['Notificações push','Perfil privado','Sons da aplicação','Mostrar estado online'].map((x,i)=>`<label class="row">${x}<input type="checkbox" ${i==0||i==3?'checked':''} onchange="showToast('${x}: '+(this.checked?'ativado':'desativado'))"></label>`).join('')}</div><div class="widget" style="display:flex;gap:8px;flex-wrap:wrap"><button class="chip" onclick="go('Contas')">Contas neste dispositivo</button><button class="chip" onclick="logout()">Terminar sessão</button></div>`,
+Definições:()=>`<div class="widget">${['Notificações no dispositivo','Perfil privado','Sons da aplicação','Mostrar estado online'].map((x,i)=>`<label class="row">${x}<input type="checkbox" ${(i==0?notifOn():i==3)?'checked':''} onchange="${i==0?'notifToggle(this)':"showToast('"+x+": '+(this.checked?'ativado':'desativado'))"}"></label>`).join('')}</div><div class="widget" style="display:flex;gap:8px;flex-wrap:wrap"><button class="chip" onclick="go('Contas')">Contas neste dispositivo</button><button class="chip" onclick="logout()">Terminar sessão</button></div>`,
 Perfil:()=>`<div class="widget" style="text-align:center">${nact(ME)?`<div style="display:inline-block;background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:6px 12px;font-size:12px;margin-bottom:8px;max-width:80%;word-break:break-word">${esc(ME.note)}</div><br>`:''}${avHTML(ME.avatar_url,ME.n,'green','width:72px;height:72px;margin:0 auto 10px;font-size:22px')}<strong>${esc(ME.n)}</strong><br><small style="color:var(--muted)">@${esc(ME.u)}</small>${ME.bio?`<p class="small" style="margin:8px 0 0">${esc(ME.bio)}</p>`:''}<div class="grid" style="margin-top:16px"><div><strong>${DB.posts.filter(p=>p.author_id===ME.id).length}</strong><br><small>Publicações</small></div><div><strong id="pfers">0</strong><br><small>Seguidores</small></div><div><strong id="pfing">${FOLLOWING.size}</strong><br><small>A seguir</small></div></div></div><div class="chips"><button class="chip on" onclick="go('EditarPerfil')">Editar perfil</button><button class="chip" onclick="go('Definições')">Definições</button><button class="chip" onclick="go('Contas')">Contas</button></div>`};
 refresh();
 function go(t,keep){if(t!=='Mensagens')CHAT.uid=null;const home=t==='Início',pg=document.getElementById('pg');document.getElementById('ttl').textContent=TITLES[t]||t;document.getElementById('v-home').classList.toggle('on',home);pg.classList.toggle('on',!home);if(!home){pg.innerHTML=R[t]?R[t]():'';if(t==='Explorar')loadPeople();if(t==='Mensagens')loadChats(true);if(t==='Perfil')profCounts();if(t==='Vídeos')loadVideos()}if((t==='Início'||t==='Histórias')&&sb&&ME.id){renderStories();loadStories()}document.querySelectorAll('.nav button[data-tab]').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));document.querySelectorAll('.mobile-nav button').forEach(b=>b.classList.toggle('active',(b.getAttribute('onclick')||'').includes("'"+t+"'")));if(t==='Mensagens'){const m=document.getElementById('msgs');if(m)m.scrollTop=m.scrollHeight}if(!keep)scrollTo({top:0,behavior:'smooth'})}
@@ -208,7 +216,7 @@ function amode(m){AU.mode=m;document.getElementById('f-in').style.display=m==='i
 function bad(id,msg){const l=document.getElementById(id).closest('.fld');l.classList.toggle('bad',!!msg);l.querySelector('.err').textContent=msg||'';return !msg}
 function tp(id,b){const i=document.getElementById(id),s=i.type==='password';i.type=s?'text':'password';b.textContent=s?'Esconder':'Mostrar'}
 function strength(v){const n=(v.length>=8)+(/[A-Z]/.test(v)&&/[a-z]/.test(v))+/\d/.test(v)+/[^A-Za-z0-9]/.test(v);document.getElementById('ps').textContent=v?'Força: '+['fraca','fraca','média','boa','forte'][n]:''}
-function applyUser(){TITLES['Início']='Olá, '+ME.n.split(' ')[0]+'! 👋';document.querySelectorAll('.mini-profile .avatar,.composer .avatar').forEach(a=>setAv(a,ME.avatar_url,ME.i));const m=document.querySelector('.mini-profile');m.querySelector('strong').textContent=ME.n;m.querySelector('small').textContent='@'+ME.u;updAcct()}
+function applyUser(){TITLES['Início']='Olá, '+ME.n.split(' ')[0]+'! 👋';document.querySelectorAll('.mini-profile .avatar,.composer .avatar').forEach(a=>{setAv(a,ME.avatar_url,ME.i);a.dataset.ru=ME.id||''});const m=document.querySelector('.mini-profile');m.querySelector('strong').textContent=ME.n;m.querySelector('small').textContent='@'+ME.u;updAcct();paintMyTile();paintRings()}
 function enter(n,u){document.getElementById('authcancel').hidden=true;Object.assign(ME,{n,u,i:n.split(/\s+/).slice(0,2).map(w=>w[0]).join('').toUpperCase()});applyUser();document.body.classList.remove('guest');document.querySelectorAll('#auth input[type=password]').forEach(i=>i.value='');go('Início');showToast('Bem-vindo, '+n.split(' ')[0]+'!')}
 async function logout(){
   const id=ME.id;
@@ -230,10 +238,10 @@ const ini=n=>n.split(/\s+/).slice(0,2).map(w=>w[0]).join('').toUpperCase();
 function ago(d){const s=(Date.now()-new Date(d))/1000;if(s<60)return'agora mesmo';if(s<3600)return'há '+Math.floor(s/60)+' min';if(s<86400)return'há '+Math.floor(s/3600)+' h';return new Date(d).toLocaleDateString('pt-PT')}
 function errMsg(e){const m=(e.message||'').toLowerCase();if(m.includes('invalid login'))return'Email ou palavra-passe incorretos.';if(m.includes('not confirmed'))return'Confirma o teu email antes de entrar.';if(m.includes('already registered'))return'Este email já tem conta.';if(m.includes('database error'))return'Nome de utilizador já existe ou é inválido.';if(m.includes('rate limit'))return'Demasiadas tentativas. Tenta mais tarde.';return'Algo correu mal. Tenta novamente.'}
 function postEl(p){const au=p.author||{full_name:'Utilizador',username:'utilizador'},liked=LIKED.has(p.id),a=document.createElement('article'),mine=p.author_id===ME.id,fo=FOLLOWING.has(p.author_id),nc=p.ncom||0;a.className='post';
-a.innerHTML=`<div class="post-head">${avHTML(au.avatar_url,au.full_name,'green')}<div class="person"><strong>${esc(au.full_name)}</strong><small>@${esc(au.username)} · ${ago(p.created_at)}${p.feeling?' · sente-se '+esc(p.feeling):''}</small></div>${mine?'':`<button class="fbtn${fo?' on':''}" data-u="${esc(p.author_id)}" onclick="toggleFollow('${esc(p.author_id)}')">${fo?'A seguir':'Seguir'}</button>`}</div><p class="post-text"></p><div class="post-stats"><span>♡ <span class="likes-count">${p.likes&&p.likes[0]?p.likes[0].count:0}</span> gostos</span></div><div class="post-actions"><button class="like-btn${liked?' liked':''}" aria-pressed="${liked}">${liked?'♥ Gostaste':'♡ Gostar'}</button><button class="cbtn">▢ Comentar${nc?' ('+nc+')':''}</button></div><div class="cmts" hidden></div>`;
+a.innerHTML=`<div class="post-head">${avHTML(au.avatar_url,au.full_name,'green','',p.author_id)}<div class="person"><strong>${esc(au.full_name)}</strong><small>@${esc(au.username)} · ${ago(p.created_at)}${p.feeling?' · sente-se '+esc(p.feeling):''}</small></div>${mine?'':`<button class="fbtn${fo?' on':''}" data-u="${esc(p.author_id)}" onclick="toggleFollow('${esc(p.author_id)}')">${fo?'A seguir':'Seguir'}</button>`}</div><p class="post-text"></p><div class="post-stats"><span>♡ <span class="likes-count">${p.likes&&p.likes[0]?p.likes[0].count:0}</span> gostos</span></div><div class="post-actions"><button class="like-btn${liked?' liked':''}" aria-pressed="${liked}">${liked?'♥ Gostaste':'♡ Gostar'}</button><button class="cbtn">▢ Comentar${nc?' ('+nc+')':''}</button></div><div class="cmts" hidden></div>`;
 a.querySelector('.post-text').textContent=p.body;
 {const pt=a.querySelector('.post-text');if(!p.body)pt.remove();
- if(p.media_url&&p.media_url.startsWith(SUPABASE_URL+'/storage/')){const m=document.createElement(p.media_type==='video'?'video':'img');m.className='pmedia';m.src=p.media_url;if(p.media_type==='video'){m.controls=true;m.preload='metadata';m.playsInline=true}else{m.loading='lazy';m.alt='Foto da publicação'}a.querySelector('.post-stats').before(m)}}
+ if(p.media_url&&p.media_url.startsWith(SUPABASE_URL+'/storage/')){const m=document.createElement(p.media_type==='video'?'video':'img');m.className='pmedia';m.src=p.media_url;if(p.media_type==='video'){m.controls=true;m.preload='metadata';m.playsInline=true}else{m.loading='lazy';m.alt='Foto da publicação';m.style.cursor='zoom-in';m.onclick=()=>openPhoto(p.media_url)}a.querySelector('.post-stats').before(m)}}
 a.querySelector('.like-btn').onclick=async function(){
   if(!sb||!ME.id){showToast('Entra na tua conta para gostar.');return}
   const on=!this.classList.contains('liked');
@@ -264,7 +272,7 @@ async function loadFeed(){
     LIKED=new Set();
     DB.posts=await hydrate(posts||[]);
     f.querySelectorAll('.post').forEach(e=>e.remove());
-    DB.posts.forEach(p=>f.append(postEl(p)));
+    DB.posts.forEach(p=>f.append(postEl(p)));paintRings();
     refresh();
   }catch(error){
     console.error('Erro ao carregar o feed:',error);
@@ -338,7 +346,8 @@ function onMsg(m){
   const open=document.getElementById('msgs');
   if(open&&CHAT.uid===m.sender_id){addBubble(m);markRead(m.sender_id)}
   else{const n=CHAT.people.get(m.sender_id);showToast('Nova mensagem'+(n?' de '+n.full_name:'')+'.');updUnread()}
-  if(open)loadChats(false)
+  if(open)loadChats(false);
+  notifyMsg(m)
 }
 async function markRead(uid){if(!sb)return;await sb.from('messages').update({read_at:new Date().toISOString()}).eq('sender_id',uid).eq('receiver_id',ME.id).is('read_at',null);updUnread()}
 function addBubble(m){
@@ -394,7 +403,7 @@ async function sendMsg(){
 }
 
 const nact=u=>!!(u&&u.note&&u.note_at&&Date.now()-new Date(u.note_at)<864e5);
-const avHTML=(url,name,cls,extra='')=>`<div class="avatar ${cls}" style="${url?`background-image:url('${esc(url)}');background-size:cover;background-position:center;`:''}${extra}">${url?'':esc(ini(name||'?'))}</div>`;
+const avHTML=(url,name,cls,extra='',uid)=>`<div class="avatar ${cls}"${uid?` data-ru="${esc(uid)}"`:''} style="${url?`background-image:url('${esc(url)}');background-size:cover;background-position:center;`:''}${extra}">${url?'':esc(ini(name||'?'))}</div>`;
 function setAv(el,url,txt){if(url){el.style.backgroundImage="url('"+url+"')";el.style.backgroundSize='cover';el.style.backgroundPosition='center';el.textContent=''}else{el.style.backgroundImage='';el.textContent=txt}}
 TITLES.EditarPerfil='Editar perfil';
 R.EditarPerfil=()=>`<div class="widget"><div style="text-align:center;margin-bottom:14px">${avHTML(ME.avatar_url,ME.n,'green','width:84px;height:84px;margin:0 auto 10px;font-size:26px;border-radius:28px')}<button class="chip" onclick="document.getElementById('pf').click()">Mudar foto</button><input type="file" id="pf" accept="image/*" hidden onchange="uploadAvatar(this)"></div><label class="fld">Nome<input id="ep-n" maxlength="40" value="${esc(ME.n)}"></label><label class="fld">Bio<input id="ep-b" maxlength="160" value="${esc(ME.bio||'')}" placeholder="Fala um pouco sobre ti"></label><label class="fld">Nota (fica visível 24 h)<input id="ep-t" maxlength="60" value="${esc(nact(ME)?ME.note:'')}" placeholder="Uma nota curta..."></label><button class="publish" style="width:100%" onclick="saveProfile()">Guardar</button></div><div class="chips"><button class="chip" onclick="go('Perfil')">← Voltar ao perfil</button></div>`;
@@ -527,11 +536,12 @@ async function loadStories(){
   data.forEach(x=>{if(!m.has(x.author_id))m.set(x.author_id,{u:pm.get(x.author_id)||{id:x.author_id,full_name:'Utilizador',username:'utilizador'},items:[]});m.get(x.author_id).items.push(x)});
   STORIES=m;renderStories()
 }
-function renderStories(){
+function renderStories(){paintMyTile();paintRings();
   const bar=document.querySelector('.stories');
   if(bar){
     bar.querySelectorAll('[data-sa]').forEach(e=>e.remove());
     storyOrder().forEach(id=>{
+      if(id===ME.id)return;
       const g=STORIES.get(id),d=document.createElement('div');
       d.className='story';d.setAttribute('role','button');d.tabIndex=0;d.dataset.sa=id;
       d.innerHTML='<div class="story-ring"><div class="story-inner"></div></div><div class="story-name"></div>';
@@ -708,13 +718,69 @@ async function loadVideos(){
   if(!data.length){box.innerHTML='<div class="widget empty">Ainda não há vídeos.<br>Os vídeos publicados aparecem aqui.</div>';return}
   const list=await hydrate(data);
   if(!box.isConnected)return;
-  box.innerHTML='';list.forEach(p=>box.append(postEl(p)))
+  box.innerHTML='';list.forEach(p=>box.append(postEl(p)));paintRings()
+}
+
+// ===== FOTO EM ECRÃ INTEIRO =====
+function openPhoto(src){const im=document.getElementById('lbimg');im.classList.remove('zoom');im.src=src;document.getElementById('lb').hidden=false}
+function closePhoto(){document.getElementById('lb').hidden=true;document.getElementById('lbimg').removeAttribute('src')}
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){closePhoto();if(!document.getElementById('sv').hidden)svClose()}});
+
+// ===== ESTADOS POR CIMA DA FOTO DE PERFIL =====
+function myTile(){STORIES.has(ME.id)?openStory(ME.id):scOpen()}
+function paintMyTile(){
+  const t=document.getElementById('mytile');if(!t)return;
+  const has=STORIES.has(ME.id),ring=t.querySelector('.story-ring'),nb=t.querySelector('.snote');
+  ring.classList.toggle('plain',!has);ring.classList.toggle('seen',has&&!unseen(ME.id));
+  setAv(t.querySelector('.story-inner'),ME.avatar_url,ME.id?ME.i:'＋');
+  if(nact(ME)){nb.textContent=ME.note;nb.hidden=false}else{nb.textContent='';nb.hidden=true}
+}
+function paintRings(){
+  document.querySelectorAll('.avatar[data-ru]').forEach(el=>{
+    const id=el.dataset.ru,has=!!id&&STORIES.has(id);
+    el.classList.toggle('ring',has);el.classList.toggle('ring-seen',has&&!unseen(id));
+    el.style.cursor=has?'pointer':'';
+    el.onclick=has?(e=>{e.stopPropagation();openStory(id)}):null
+  })
+}
+
+// ===== NOTIFICAÇÕES NO DISPOSITIVO =====
+let SWREG=null;
+async function initSW(){try{if('serviceWorker' in navigator){SWREG=await navigator.serviceWorker.register('sw.js');navigator.serviceWorker.addEventListener('message',e=>{if(e.data&&e.data.type==='chat'&&ME.id)chatWith(e.data.uid)})}}catch(e){console.warn('Service worker indisponível:',e)}}
+function notifOn(){try{return 'Notification' in window&&Notification.permission==='granted'&&localStorage.getItem('uni_notif')!=='off'}catch(e){return false}}
+function sysNotify(title,body,tag,data){
+  if(!notifOn())return;
+  const opt={body,tag,data,renotify:true,vibrate:[120,60,120]};
+  try{if(SWREG&&SWREG.showNotification)SWREG.showNotification(title,opt);else new Notification(title,opt)}catch(e){console.warn('Notificação falhou:',e)}
+}
+async function notifAsk(){
+  if(!('Notification' in window)){showToast('Este navegador não suporta notificações.');return}
+  const r=await Notification.requestPermission();
+  const nb=document.getElementById('nbanner');if(nb)nb.hidden=true;
+  if(r==='granted'){try{localStorage.setItem('uni_notif','on')}catch(e){}showToast('Notificações ativadas neste dispositivo.');sysNotify('UniSocial','Notificações ativadas. Vais receber um aviso quando alguém te escrever.','teste')}
+  else showToast('Notificações bloqueadas. Ativa-as nas definições do navegador.');
+  return r
+}
+async function notifToggle(cb){
+  if(!cb.checked){try{localStorage.setItem('uni_notif','off')}catch(e){}showToast('Notificações no dispositivo desativadas.');return}
+  try{localStorage.setItem('uni_notif','on')}catch(e){}
+  if(!('Notification' in window)){cb.checked=false;showToast('Este navegador não suporta notificações.');return}
+  if(Notification.permission==='granted'){showToast('Notificações ativadas.');return}
+  const r=await notifAsk();if(r!=='granted')cb.checked=false
+}
+function nbShow(){const nb=document.getElementById('nbanner');if(!nb)return;let x='0';try{x=localStorage.getItem('uni_nbx')||'0'}catch(e){}nb.hidden=!('Notification' in window&&Notification.permission==='default'&&x!=='1'&&ME.id)}
+function nbHide(){try{localStorage.setItem('uni_nbx','1')}catch(e){}document.getElementById('nbanner').hidden=true}
+async function notifyMsg(m){
+  if(!document.hidden){if(notifOn()&&navigator.vibrate)navigator.vibrate(60);return}
+  let n=CHAT.people.get(m.sender_id);
+  if(!n&&sb){const{data}=await sb.from('profiles').select('id,username,full_name,avatar_url').eq('id',m.sender_id).maybeSingle();if(data){CHAT.people.set(data.id,data);n=data}}
+  sysNotify(n?n.full_name:'Nova mensagem',(m.body||'').slice(0,100),'msg-'+m.sender_id,{uid:m.sender_id})
 }
 async function onSession(session){if(!session){const was=ME.id;ME.id=null;resetUserState();AU.showForm=false;renderSaved();DB.posts=[];FOLLOWING=new Set();FEED='all';CHAT={uid:null,people:new Map()};if(msgChan&&sb){sb.removeChannel(msgChan);msgChan=null}setBadge(0);document.getElementById('feedMode').textContent='Todos ⌄';if(chan&&sb){sb.removeChannel(chan);chan=null}document.getElementById('feed').querySelectorAll('.post').forEach(e=>e.remove());refresh();document.body.classList.add('guest');amode('in');scrollTo(0,0);if(was)showToast('Sessão terminada.');return}
-if(ME.id&&ME.id!==session.user.id)resetUserState();ME.id=session.user.id;const{data:p}=await sb.from('profiles').select('username,full_name,bio,avatar_url,note,note_at').eq('id',ME.id).maybeSingle();const m=session.user.user_metadata||{};Object.assign(ME,{bio:p?.bio||'',avatar_url:p?.avatar_url||null,note:p?.note||null,note_at:p?.note_at||null});enter(p?.full_name||m.full_name||'Utilizador',p?.username||m.username||'utilizador');await loadFollows();loadFeed();subMsgs();updUnread();loadStories();if(!chan)chan=sb.channel('feed').on('postgres_changes',{event:'*',schema:'public',table:'posts'},()=>loadFeed()).subscribe()}
+if(ME.id&&ME.id!==session.user.id)resetUserState();ME.id=session.user.id;const{data:p}=await sb.from('profiles').select('username,full_name,bio,avatar_url,note,note_at').eq('id',ME.id).maybeSingle();const m=session.user.user_metadata||{};Object.assign(ME,{bio:p?.bio||'',avatar_url:p?.avatar_url||null,note:p?.note||null,note_at:p?.note_at||null});enter(p?.full_name||m.full_name||'Utilizador',p?.username||m.username||'utilizador');await loadFollows();loadFeed();subMsgs();updUnread();loadStories();nbShow();if(!chan)chan=sb.channel('feed').on('postgres_changes',{event:'*',schema:'public',table:'posts'},()=>loadFeed()).subscribe()}
 if(sb)sb.auth.onAuthStateChange((ev,session)=>{if(session&&(ev==='TOKEN_REFRESHED'||ev==='SIGNED_IN'||ev==='INITIAL_SESSION'))saveTokens(session);if(ev==='SIGNED_IN'&&session&&ME.id===session.user.id)return;if(ev==='INITIAL_SESSION'||ev==='SIGNED_IN'||ev==='SIGNED_OUT')setTimeout(()=>onSession(session),0)});
 else{const n=document.getElementById('authnote');n.textContent='Falta configurar o Supabase no código (SUPABASE_URL e SUPABASE_ANON_KEY).';n.style.color='var(--pink)'}
-renderSaved();
+renderSaved();initSW();
 async function forgot(){const em=document.getElementById('li-e').value.trim();if(!sb)return showToast('Supabase não configurado.');if(!EM.test(em))return bad('li-e','Indica o teu email para recuperar a palavra-passe.');bad('li-e','');await sb.auth.resetPasswordForEmail(em);showToast('Se o email existir, enviámos instruções.')}
 async function busy(f,fn){const b=document.querySelector('#'+f+' .publish');b.disabled=true;try{await fn()}finally{b.disabled=false}}
 function auth(e){e.preventDefault();if(!sb){showToast('Falta configurar o Supabase.');return false}const g=id=>document.getElementById(id).value;

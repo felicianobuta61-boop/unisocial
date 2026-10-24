@@ -105,7 +105,7 @@ body.guest .app,body.guest .mobile-nav{display:none}body:not(.guest) #auth{displ
 <nav class="mobile-nav"><button class="active" onclick="mobileTab(this,'Início')">⌂</button><button onclick="mobileTab(this,'Explorar')">⌕</button><button onclick="mobileTab(this,'Publicar')">⊕</button><button onclick="mobileTab(this,'Mensagens')" aria-label="Mensagens">▤<span class="mb" id="mbadge2" hidden></span></button><button onclick="mobileTab(this,'Perfil')">☻</button></nav>
 <section id="auth">
 <div class="hero"><div class="brand" style="margin:0"><div class="brandmark">U</div><div>uni<span>social</span></div></div><h2>Liga o teu <span>mundo</span>.</h2><p>Publicações, mensagens, histórias e grupos num só lugar, com um design pensado para ti.</p><ul><li>Partilha momentos com quem importa</li><li>Conversa em privado ou em grupo</li><li>Descobre vídeos, pessoas e comunidades</li></ul></div>
-<div class="authcard"><button type="button" class="link" id="authcancel" hidden onclick="cancelAdd()" style="margin-bottom:14px">← Voltar à conta atual</button><div id="saved"></div><button type="button" class="chip on" id="otherbtn" hidden onclick="showOther()" style="width:100%;padding:13px;text-align:center">＋ Entrar com outra conta</button><div id="authform"><div class="seg"><button type="button" class="on" onclick="amode('in')">Entrar</button><button type="button" onclick="amode('up')">Criar conta</button></div><h1 id="atitle" style="font-size:22px;letter-spacing:-.5px;margin:0 0 18px">Bem-vindo de volta</h1>
+<div class="authcard"><button type="button" class="link" id="authcancel" hidden onclick="backForm()" style="margin-bottom:14px">← Voltar à conta atual</button><div id="saved"></div><button type="button" class="chip on" id="otherbtn" hidden onclick="showOther()" style="width:100%;padding:13px;text-align:center">＋ Entrar com outra conta</button><div id="authform"><div class="seg"><button type="button" class="on" onclick="amode('in')">Entrar</button><button type="button" onclick="amode('up')">Criar conta</button></div><h1 id="atitle" style="font-size:22px;letter-spacing:-.5px;margin:0 0 18px">Bem-vindo de volta</h1>
 <form id="f-in" novalidate onsubmit="return auth(event)">
 <label class="fld">Email<input id="li-e" type="email" autocomplete="email" placeholder="nome@exemplo.com"><span class="err"></span></label>
 <label class="fld">Palavra-passe<span class="pw"><input id="li-p" type="password" autocomplete="current-password" placeholder="A tua palavra-passe"><button type="button" onclick="tp('li-p',this)">Mostrar</button></span><span class="err"></span></label>
@@ -460,14 +460,23 @@ function renderSaved(){
   const box=document.getElementById('saved');if(!box)return;
   const a=getAccts();
   if(!a.length){box.innerHTML='';syncAuth(0);return}
-  box.innerHTML='<h2 class="h2" style="margin:0 0 8px">Contas neste dispositivo</h2>'+a.map(x=>`<div class="contact" style="cursor:pointer" onclick="switchTo('${esc(x.id)}')">${avHTML(x.avatar_url,x.name,'green')}<div class="contact-info"><strong>${esc(x.name)}</strong><small>@${esc(x.username)}${x.expired?' · precisa da palavra-passe':''}</small></div><span class="small">${x.id===ME.id?'ativa':'Entrar ›'}</span></div>`).join('')+'<div style="height:12px"></div>';syncAuth(a.length)
+  box.innerHTML='<h2 class="h2" style="margin:0 0 4px">Contas neste dispositivo</h2><p class="small" style="margin:0 0 12px">Toca numa conta para entrar.</p>'+a.map(x=>`<div class="contact" style="cursor:pointer" onclick="switchTo('${esc(x.id)}')">${avHTML(x.avatar_url,x.name,'green')}<div class="contact-info"><strong>${esc(x.name)}</strong><small>@${esc(x.username)}${x.expired?' · precisa da palavra-passe':''}</small></div><span class="small">${x.id===ME.id?'ativa':'Entrar ›'}</span></div>`).join('')+'<div style="height:12px"></div>';syncAuth(a.length)
 }
-function syncAuth(n){const f=document.getElementById('authform'),b=document.getElementById('otherbtn');if(!f||!b)return;const hide=n>0&&!AU.showForm;f.style.display=hide?'none':'';b.hidden=!hide}
-function showOther(){AU.showForm=true;syncAuth(getAccts().length);const e=document.getElementById('li-e');if(e)e.focus()}
+function syncAuth(n){
+  const f=document.getElementById('authform'),b=document.getElementById('otherbtn'),sv=document.getElementById('saved'),c=document.getElementById('authcancel');
+  if(!f||!b||!sv||!c)return;
+  const accounts=n>0&&!AU.showForm;
+  f.style.display=accounts?'none':'';
+  sv.style.display=accounts?'':'none';
+  b.hidden=!accounts;
+  c.hidden=accounts||!(n>0||ME.id);
+  c.textContent=ME.id?'← Voltar à conta atual':'← Voltar às contas'
+}
+function showOther(){AU.showForm=true;syncAuth(getAccts().length);scrollTo(0,0);const e=document.getElementById('li-e');if(e)e.focus()}
+function backForm(){if(ME.id){cancelAdd();return}AU.showForm=false;syncAuth(getAccts().length);scrollTo(0,0)}
 function addAccount(a){
   AU.showForm=true;
   document.body.classList.add('guest');
-  document.getElementById('authcancel').hidden=!ME.id;
   amode('in');
   document.getElementById('li-e').value=(a&&a.email)||'';
   renderSaved();scrollTo(0,0)

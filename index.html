@@ -55,6 +55,10 @@ body.guest .app,body.guest .mobile-nav{display:none}body:not(.guest) #auth{displ
 .sv-cap{position:absolute;left:0;right:0;bottom:0;padding:40px 18px 24px;background:linear-gradient(transparent,#000b);font-size:15px;text-align:center;word-break:break-word;color:#fff}
 .sv-tap{position:absolute;inset:0;display:flex;z-index:2}.sv-tap span{flex:1}.sv-tap span:last-child{flex:2}
 .sc-prev{position:relative;height:52vh;margin:6px 14px 12px;border-radius:20px;display:flex;overflow:hidden}.sc-prev textarea{width:100%;border:0;outline:none;resize:none;color:#fff;text-align:center;font-weight:800;font-family:inherit;padding:18px}
+.mobile-nav button{position:relative}.mobile-nav .mb{position:absolute;top:-2px;right:0;font-size:10px;background:var(--pink);color:#25111a;padding:2px 6px;border-radius:20px;font-weight:900}
+.pmedia{display:block;width:100%;max-height:480px;object-fit:contain;border-radius:14px;margin:10px 0;background:#000}
+#mprev{display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap;margin-top:12px}#mprev[hidden]{display:none}.mp{position:relative}.mp img,.mp video{display:block;max-width:100%;max-height:200px;border-radius:14px;background:#000}.mp .chip{position:absolute;top:6px;right:6px;background:#000a;color:#fff}
+.fpick{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}.fpick[hidden]{display:none}.fpick button{background:var(--panel2);border:1px solid var(--line);border-radius:20px;padding:8px 12px;font-size:13px;color:var(--text)}
 </style>
 </head>
 <body class="guest">
@@ -76,14 +80,15 @@ body.guest .app,body.guest .mobile-nav{display:none}body:not(.guest) #auth{displ
   </div>
 </aside>
 <main>
-  <header class="topbar"><div><div class="eyebrow">O teu mundo, conectado</div><h1 id="ttl">Olá! 👋</h1></div><div class="top-actions"><button class="round" aria-label="Pesquisar" onclick="go('Explorar')">⌕</button><button class="round" aria-label="Notificações" onclick="showToast('Não tens novas notificações')">🔔</button></div></header>
+  <header class="topbar"><div><div class="eyebrow">O teu mundo, conectado</div><h1 id="ttl">Olá! 👋</h1></div><div class="top-actions"><button class="round" aria-label="Pesquisar" onclick="go('Explorar')">⌕</button><button class="round" aria-label="Notificações" onclick="bell()">🔔<span class="dot" id="bdot" hidden></span></button></div></header>
   <div class="view on" id="v-home"><input class="search" type="search" id="mobileSearch" aria-label="Pesquisar" placeholder="⌕  Pesquisa pessoas, publicações e grupos...">
   <section class="stories">
     <div class="story" role="button" tabindex="0" onclick="scOpen()"><div class="story-ring"><div class="story-inner">＋</div></div><div class="story-name">A tua história</div></div>
   </section>
   <section class="composer">
     <div class="composer-top"><div class="avatar green">TU</div><input id="postInput" placeholder="O que queres partilhar hoje?" maxlength="240"></div>
-    <div class="composer-actions"><div class="tools"><button onclick="showToast('A opção de fotos será ligada na versão completa.')">▧ Foto</button><button onclick="showToast('A opção de vídeo será ligada na versão completa.')">▷ Vídeo</button><button onclick="showToast('Em breve: adicionar sentimento.')">☺ Sentimento</button></div><button class="publish" onclick="publishPost()">Publicar ↗</button></div>
+    <div class="composer-actions"><div class="tools"><button onclick="document.getElementById('pm-i').click()">▧ Foto</button><button onclick="document.getElementById('pm-v').click()">▷ Vídeo</button><button onclick="fpToggle()">☺ Sentimento</button><input type="file" id="pm-i" accept="image/*" hidden onchange="pmPick(this,'image')"><input type="file" id="pm-v" accept="video/mp4,video/webm,video/quicktime,video/*" hidden onchange="pmPick(this,'video')"></div><button class="publish" onclick="publishPost()">Publicar ↗</button></div>
+    <div id="mprev" hidden></div><div class="fpick" id="fpick" hidden></div>
   </section>
   <div class="feed-head"><h2>O teu feed <span style="color:var(--lime)">✳</span></h2><button id="feedMode" onclick="setFeed()">Todos ⌄</button></div>
   <div id="feed">
@@ -97,10 +102,10 @@ body.guest .app,body.guest .mobile-nav{display:none}body:not(.guest) #auth{displ
   <p style="color:var(--muted);font-size:10px;line-height:1.8;padding:0 5px">Sobre · Privacidade · Termos<br>© 2026 UniSocial</p>
 </aside>
 </div>
-<nav class="mobile-nav"><button class="active" onclick="mobileTab(this,'Início')">⌂</button><button onclick="mobileTab(this,'Explorar')">⌕</button><button onclick="mobileTab(this,'Publicar')">⊕</button><button onclick="mobileTab(this,'Mensagens')">▤</button><button onclick="mobileTab(this,'Perfil')">☻</button></nav>
+<nav class="mobile-nav"><button class="active" onclick="mobileTab(this,'Início')">⌂</button><button onclick="mobileTab(this,'Explorar')">⌕</button><button onclick="mobileTab(this,'Publicar')">⊕</button><button onclick="mobileTab(this,'Mensagens')" aria-label="Mensagens">▤<span class="mb" id="mbadge2" hidden></span></button><button onclick="mobileTab(this,'Perfil')">☻</button></nav>
 <section id="auth">
 <div class="hero"><div class="brand" style="margin:0"><div class="brandmark">U</div><div>uni<span>social</span></div></div><h2>Liga o teu <span>mundo</span>.</h2><p>Publicações, mensagens, histórias e grupos num só lugar, com um design pensado para ti.</p><ul><li>Partilha momentos com quem importa</li><li>Conversa em privado ou em grupo</li><li>Descobre vídeos, pessoas e comunidades</li></ul></div>
-<div class="authcard"><button type="button" class="link" id="authcancel" hidden onclick="cancelAdd()" style="margin-bottom:14px">← Voltar à conta atual</button><div id="saved"></div><div class="seg"><button type="button" class="on" onclick="amode('in')">Entrar</button><button type="button" onclick="amode('up')">Criar conta</button></div><h1 id="atitle" style="font-size:22px;letter-spacing:-.5px;margin:0 0 18px">Bem-vindo de volta</h1>
+<div class="authcard"><button type="button" class="link" id="authcancel" hidden onclick="cancelAdd()" style="margin-bottom:14px">← Voltar à conta atual</button><div id="saved"></div><button type="button" class="chip on" id="otherbtn" hidden onclick="showOther()" style="width:100%;padding:13px;text-align:center">＋ Entrar com outra conta</button><div id="authform"><div class="seg"><button type="button" class="on" onclick="amode('in')">Entrar</button><button type="button" onclick="amode('up')">Criar conta</button></div><h1 id="atitle" style="font-size:22px;letter-spacing:-.5px;margin:0 0 18px">Bem-vindo de volta</h1>
 <form id="f-in" novalidate onsubmit="return auth(event)">
 <label class="fld">Email<input id="li-e" type="email" autocomplete="email" placeholder="nome@exemplo.com"><span class="err"></span></label>
 <label class="fld">Palavra-passe<span class="pw"><input id="li-p" type="password" autocomplete="current-password" placeholder="A tua palavra-passe"><button type="button" onclick="tp('li-p',this)">Mostrar</button></span><span class="err"></span></label>
@@ -114,7 +119,7 @@ body.guest .app,body.guest .mobile-nav{display:none}body:not(.guest) #auth{displ
 <label class="fld">Confirmar palavra-passe<input id="su-c" type="password" autocomplete="new-password" placeholder="Repete a palavra-passe"><span class="err"></span></label>
 <label class="fld chk"><input type="checkbox" id="su-t">Aceito os Termos e a Política de Privacidade<span class="err"></span></label>
 <button class="publish" type="submit">Criar conta ↗</button></form>
-<p class="small" id="authnote" style="margin:16px 0 0;text-align:center">Ao continuares, aceitas os Termos e a Política de Privacidade.</p></div>
+<p class="small" id="authnote" style="margin:16px 0 0;text-align:center">Ao continuares, aceitas os Termos e a Política de Privacidade.</p></div></div>
 </section>
 <div class="ov" id="sv" hidden>
 <div class="sv-bars" id="svbars"></div>
@@ -140,21 +145,31 @@ function toggleLike(btn){const post=btn.closest('.post'),count=post.querySelecto
 async function publishPost(){
   const input=document.getElementById('postInput');
   const body=input.value.trim();
-  if(!body){showToast('Escreve alguma coisa antes de publicar.');input.focus();return}
+  if(!body&&!PM.blob){showToast('Escreve algo ou escolhe uma foto ou um vídeo.');input.focus();return}
   if(!sb){showToast('Supabase não está configurado.');return}
   const {data:{user},error:userError}=await sb.auth.getUser();
   if(userError||!user){showToast('Entra na tua conta antes de publicar.');return}
   const btn=document.querySelector('.composer .publish');
-  if(btn){btn.disabled=true;btn.textContent='A publicar…'}
+  if(btn){btn.disabled=true;btn.textContent=PM.blob?'A enviar…':'A publicar…'}
+  let path=null;
   try{
-    const {error}=await sb.from('posts').insert({body:body,author_id:user.id});
-    if(error){console.error('Erro ao publicar:',error);showToast('Erro ao publicar: '+(error.message||'verifica as permissões da tabela posts.'));return}
-    input.value='';
+    let media_url=null,media_type=null;
+    if(PM.blob){
+      const t=PM.blob.type||(PM.kind==='image'?'image/jpeg':'video/mp4');
+      const ext=PM.kind==='image'?'jpg':(t.includes('webm')?'webm':t.includes('quicktime')?'mov':'mp4');
+      path=user.id+'/'+Date.now()+'.'+ext;
+      const {error:ue}=await sb.storage.from('post-media').upload(path,PM.blob,{contentType:t});
+      if(ue)throw ue;
+      media_url=sb.storage.from('post-media').getPublicUrl(path).data.publicUrl;media_type=PM.kind
+    }
+    const {error}=await sb.from('posts').insert({body:body,author_id:user.id,media_url,media_type,feeling:PM.feeling});
+    if(error){if(path)sb.storage.from('post-media').remove([path]);console.error('Erro ao publicar:',error);showToast('Erro ao publicar: '+(error.message||'verifica as permissões da tabela posts.'));return}
+    input.value='';pmClear(false);
     showToast('Publicação publicada!');
     await loadFeed();
   }catch(err){
     console.error('Erro inesperado ao publicar:',err);
-    showToast('Ocorreu um erro ao publicar. Tenta novamente.');
+    showToast('Erro ao publicar: '+(err.message||'tenta novamente.'));
   }finally{
     if(btn){btn.disabled=false;btn.textContent='Publicar ↗'}
   }
@@ -186,7 +201,7 @@ Guardados:()=>emp('Ainda não guardaste nada.'),
 Definições:()=>`<div class="widget">${['Notificações push','Perfil privado','Sons da aplicação','Mostrar estado online'].map((x,i)=>`<label class="row">${x}<input type="checkbox" ${i==0||i==3?'checked':''} onchange="showToast('${x}: '+(this.checked?'ativado':'desativado'))"></label>`).join('')}</div><div class="widget" style="display:flex;gap:8px;flex-wrap:wrap"><button class="chip" onclick="go('Contas')">Contas neste dispositivo</button><button class="chip" onclick="logout()">Terminar sessão</button></div>`,
 Perfil:()=>`<div class="widget" style="text-align:center">${nact(ME)?`<div style="display:inline-block;background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:6px 12px;font-size:12px;margin-bottom:8px;max-width:80%;word-break:break-word">${esc(ME.note)}</div><br>`:''}${avHTML(ME.avatar_url,ME.n,'green','width:72px;height:72px;margin:0 auto 10px;font-size:22px')}<strong>${esc(ME.n)}</strong><br><small style="color:var(--muted)">@${esc(ME.u)}</small>${ME.bio?`<p class="small" style="margin:8px 0 0">${esc(ME.bio)}</p>`:''}<div class="grid" style="margin-top:16px"><div><strong>${DB.posts.filter(p=>p.author_id===ME.id).length}</strong><br><small>Publicações</small></div><div><strong id="pfers">0</strong><br><small>Seguidores</small></div><div><strong id="pfing">${FOLLOWING.size}</strong><br><small>A seguir</small></div></div></div><div class="chips"><button class="chip on" onclick="go('EditarPerfil')">Editar perfil</button><button class="chip" onclick="go('Definições')">Definições</button><button class="chip" onclick="go('Contas')">Contas</button></div>`};
 refresh();
-function go(t,keep){if(t!=='Mensagens')CHAT.uid=null;const home=t==='Início',pg=document.getElementById('pg');document.getElementById('ttl').textContent=TITLES[t]||t;document.getElementById('v-home').classList.toggle('on',home);pg.classList.toggle('on',!home);if(!home){pg.innerHTML=R[t]?R[t]():'';if(t==='Explorar')loadPeople();if(t==='Mensagens')loadChats(true);if(t==='Perfil')profCounts()}if((t==='Início'||t==='Histórias')&&sb&&ME.id){renderStories();loadStories()}document.querySelectorAll('.nav button[data-tab]').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));document.querySelectorAll('.mobile-nav button').forEach(b=>b.classList.toggle('active',(b.getAttribute('onclick')||'').includes("'"+t+"'")));if(t==='Mensagens'){const m=document.getElementById('msgs');if(m)m.scrollTop=m.scrollHeight}if(!keep)scrollTo({top:0,behavior:'smooth'})}
+function go(t,keep){if(t!=='Mensagens')CHAT.uid=null;const home=t==='Início',pg=document.getElementById('pg');document.getElementById('ttl').textContent=TITLES[t]||t;document.getElementById('v-home').classList.toggle('on',home);pg.classList.toggle('on',!home);if(!home){pg.innerHTML=R[t]?R[t]():'';if(t==='Explorar')loadPeople();if(t==='Mensagens')loadChats(true);if(t==='Perfil')profCounts();if(t==='Vídeos')loadVideos()}if((t==='Início'||t==='Histórias')&&sb&&ME.id){renderStories();loadStories()}document.querySelectorAll('.nav button[data-tab]').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));document.querySelectorAll('.mobile-nav button').forEach(b=>b.classList.toggle('active',(b.getAttribute('onclick')||'').includes("'"+t+"'")));if(t==='Mensagens'){const m=document.getElementById('msgs');if(m)m.scrollTop=m.scrollHeight}if(!keep)scrollTo({top:0,behavior:'smooth'})}
 
 const ME={n:'O teu perfil',u:'teu_perfil',i:'TU'},AU={mode:'in'},EM=/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 function amode(m){AU.mode=m;document.getElementById('f-in').style.display=m==='in'?'block':'none';document.getElementById('f-up').style.display=m==='up'?'block':'none';document.querySelectorAll('.seg button').forEach((b,i)=>b.classList.toggle('on',(i===0)===(m==='in')));document.getElementById('atitle').textContent=m==='in'?'Bem-vindo de volta':'Cria a tua conta'}
@@ -195,7 +210,19 @@ function tp(id,b){const i=document.getElementById(id),s=i.type==='password';i.ty
 function strength(v){const n=(v.length>=8)+(/[A-Z]/.test(v)&&/[a-z]/.test(v))+/\d/.test(v)+/[^A-Za-z0-9]/.test(v);document.getElementById('ps').textContent=v?'Força: '+['fraca','fraca','média','boa','forte'][n]:''}
 function applyUser(){TITLES['Início']='Olá, '+ME.n.split(' ')[0]+'! 👋';document.querySelectorAll('.mini-profile .avatar,.composer .avatar').forEach(a=>setAv(a,ME.avatar_url,ME.i));const m=document.querySelector('.mini-profile');m.querySelector('strong').textContent=ME.n;m.querySelector('small').textContent='@'+ME.u;updAcct()}
 function enter(n,u){document.getElementById('authcancel').hidden=true;Object.assign(ME,{n,u,i:n.split(/\s+/).slice(0,2).map(w=>w[0]).join('').toUpperCase()});applyUser();document.body.classList.remove('guest');document.querySelectorAll('#auth input[type=password]').forEach(i=>i.value='');go('Início');showToast('Bem-vindo, '+n.split(' ')[0]+'!')}
-async function logout(){const id=ME.id;if(sb){await sb.auth.signOut();rmAcct(id)}else onSession(null)}
+async function logout(){
+  const id=ME.id;
+  if(!sb){onSession(null);return}
+  const saved=getAccts().some(x=>x.id===id);
+  if(saved&&confirm('Guardar esta conta neste dispositivo?\n\nOK: da próxima vez entras com um toque.\nCancelar: termina a sessão e pede a palavra-passe.')){
+    try{const{data}=await sb.auth.getSession();saveTokens(data.session)}catch(e){}
+    sb.auth.stopAutoRefresh();
+    try{Object.keys(localStorage).filter(k=>/^sb-.*-auth-token/.test(k)).forEach(k=>localStorage.removeItem(k))}catch(e){}
+    location.reload();return
+  }
+  await sb.auth.signOut();
+  if(saved){const l=getAccts(),i=l.findIndex(x=>x.id===id);if(i>=0){l[i].expired=true;l[i].access_token=null;l[i].refresh_token=null;putAccts(l)}renderSaved()}
+}
 const SB_OK=typeof supabase!=='undefined'&&!SUPABASE_URL.startsWith('COLE')&&!SUPABASE_ANON_KEY.startsWith('COLE');
 const sb=SB_OK?supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY):null;
 let LIKED=new Set(),chan=null;
@@ -203,8 +230,10 @@ const ini=n=>n.split(/\s+/).slice(0,2).map(w=>w[0]).join('').toUpperCase();
 function ago(d){const s=(Date.now()-new Date(d))/1000;if(s<60)return'agora mesmo';if(s<3600)return'há '+Math.floor(s/60)+' min';if(s<86400)return'há '+Math.floor(s/3600)+' h';return new Date(d).toLocaleDateString('pt-PT')}
 function errMsg(e){const m=(e.message||'').toLowerCase();if(m.includes('invalid login'))return'Email ou palavra-passe incorretos.';if(m.includes('not confirmed'))return'Confirma o teu email antes de entrar.';if(m.includes('already registered'))return'Este email já tem conta.';if(m.includes('database error'))return'Nome de utilizador já existe ou é inválido.';if(m.includes('rate limit'))return'Demasiadas tentativas. Tenta mais tarde.';return'Algo correu mal. Tenta novamente.'}
 function postEl(p){const au=p.author||{full_name:'Utilizador',username:'utilizador'},liked=LIKED.has(p.id),a=document.createElement('article'),mine=p.author_id===ME.id,fo=FOLLOWING.has(p.author_id),nc=p.ncom||0;a.className='post';
-a.innerHTML=`<div class="post-head">${avHTML(au.avatar_url,au.full_name,'green')}<div class="person"><strong>${esc(au.full_name)}</strong><small>@${esc(au.username)} · ${ago(p.created_at)}</small></div>${mine?'':`<button class="fbtn${fo?' on':''}" data-u="${esc(p.author_id)}" onclick="toggleFollow('${esc(p.author_id)}')">${fo?'A seguir':'Seguir'}</button>`}</div><p class="post-text"></p><div class="post-stats"><span>♡ <span class="likes-count">${p.likes&&p.likes[0]?p.likes[0].count:0}</span> gostos</span></div><div class="post-actions"><button class="like-btn${liked?' liked':''}" aria-pressed="${liked}">${liked?'♥ Gostaste':'♡ Gostar'}</button><button class="cbtn">▢ Comentar${nc?' ('+nc+')':''}</button></div><div class="cmts" hidden></div>`;
+a.innerHTML=`<div class="post-head">${avHTML(au.avatar_url,au.full_name,'green')}<div class="person"><strong>${esc(au.full_name)}</strong><small>@${esc(au.username)} · ${ago(p.created_at)}${p.feeling?' · sente-se '+esc(p.feeling):''}</small></div>${mine?'':`<button class="fbtn${fo?' on':''}" data-u="${esc(p.author_id)}" onclick="toggleFollow('${esc(p.author_id)}')">${fo?'A seguir':'Seguir'}</button>`}</div><p class="post-text"></p><div class="post-stats"><span>♡ <span class="likes-count">${p.likes&&p.likes[0]?p.likes[0].count:0}</span> gostos</span></div><div class="post-actions"><button class="like-btn${liked?' liked':''}" aria-pressed="${liked}">${liked?'♥ Gostaste':'♡ Gostar'}</button><button class="cbtn">▢ Comentar${nc?' ('+nc+')':''}</button></div><div class="cmts" hidden></div>`;
 a.querySelector('.post-text').textContent=p.body;
+{const pt=a.querySelector('.post-text');if(!p.body)pt.remove();
+ if(p.media_url&&p.media_url.startsWith(SUPABASE_URL+'/storage/')){const m=document.createElement(p.media_type==='video'?'video':'img');m.className='pmedia';m.src=p.media_url;if(p.media_type==='video'){m.controls=true;m.preload='metadata';m.playsInline=true}else{m.loading='lazy';m.alt='Foto da publicação'}a.querySelector('.post-stats').before(m)}}
 a.querySelector('.like-btn').onclick=async function(){
   if(!sb||!ME.id){showToast('Entra na tua conta para gostar.');return}
   const on=!this.classList.contains('liked');
@@ -228,41 +257,12 @@ async function loadFeed(){
   const f=document.getElementById('feed');
   try{
     // Buscar publicações sem depender de relações automáticas do PostgREST.
-    let q=sb.from('posts').select('id,author_id,body,created_at').order('created_at',{ascending:false}).limit(50);
+    let q=sb.from('posts').select(POSTCOLS).order('created_at',{ascending:false}).limit(50);
     if(FEED==='following')q=q.in('author_id',[ME.id,...FOLLOWING]);
     const {data:posts,error}=await q;
     if(error)throw error;
-    const ids=[...new Set((posts||[]).map(p=>p.author_id).filter(Boolean))];
-    let profiles=[];
-    if(ids.length){
-      const {data,error:profileError}=await sb.from('profiles')
-        .select('id,username,full_name,avatar_url,bio,note,note_at').in('id',ids);
-      if(profileError)console.warn('Não foi possível carregar alguns perfis:',profileError);
-      profiles=data||[];
-    }
-    const postIds=(posts||[]).map(p=>p.id);
-    let likes=[];
-    if(postIds.length){
-      const {data,error:likesError}=await sb.from('likes')
-        .select('post_id,user_id').in('post_id',postIds);
-      if(likesError)console.warn('Não foi possível carregar os gostos:',likesError);
-      likes=data||[];
-    }
-    const cc=new Map();
-    if(postIds.length){
-      const {data:cs,error:ce}=await sb.from('comments').select('post_id').in('post_id',postIds);
-      if(ce)console.warn('Não foi possível carregar os comentários:',ce);
-      (cs||[]).forEach(c=>cc.set(c.post_id,(cc.get(c.post_id)||0)+1));
-    }
-    LIKED=new Set(likes.filter(x=>x.user_id===ME.id).map(x=>x.post_id));
-    const profileMap=new Map(profiles.map(p=>[p.id,p]));
-    const likeCounts=new Map();
-    likes.forEach(l=>likeCounts.set(l.post_id,(likeCounts.get(l.post_id)||0)+1));
-    DB.posts=(posts||[]).map(p=>({
-      ...p,t:p.body,ncom:cc.get(p.id)||0,
-      author:profileMap.get(p.author_id)||{full_name:'Utilizador',username:'utilizador'},
-      likes:[{count:likeCounts.get(p.id)||0}]
-    }));
+    LIKED=new Set();
+    DB.posts=await hydrate(posts||[]);
     f.querySelectorAll('.post').forEach(e=>e.remove());
     DB.posts.forEach(p=>f.append(postEl(p)));
     refresh();
@@ -329,7 +329,10 @@ async function openComments(pid,box,cb,n){
 }
 
 function chatWith(uid){CHAT.uid=uid;go('Mensagens')}
-async function updUnread(){if(!sb||!ME.id)return;const{count}=await sb.from('messages').select('*',{count:'exact',head:true}).eq('receiver_id',ME.id).is('read_at',null);const b=document.getElementById('mbadge');if(b&&count!=null){b.textContent=count;b.hidden=!count}}
+async function updUnread(){if(!sb||!ME.id)return;const{count}=await sb.from('messages').select('*',{count:'exact',head:true}).eq('receiver_id',ME.id).is('read_at',null);if(count!=null)setBadge(count)}
+function setBadge(n){['mbadge','mbadge2'].forEach(id=>{const b=document.getElementById(id);if(b){b.textContent=n>99?'99+':n;b.hidden=!n}});const d=document.getElementById('bdot');if(d)d.hidden=!n;document.title=(n?'('+n+') ':'')+'UniSocial — Liga o teu mundo'}
+function bell(){const b=document.getElementById('mbadge');if(b&&!b.hidden)go('Mensagens');else showToast('Não tens novas notificações')}
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)updUnread()});
 function subMsgs(){if(!sb||!ME.id||msgChan)return;msgChan=sb.channel('msgs-'+ME.id).on('postgres_changes',{event:'INSERT',schema:'public',table:'messages',filter:'receiver_id=eq.'+ME.id},pl=>onMsg(pl.new)).subscribe()}
 function onMsg(m){
   const open=document.getElementById('msgs');
@@ -437,33 +440,39 @@ async function saveProfile(){
 
 // ===== CONTAS GUARDADAS NESTE DISPOSITIVO =====
 const AK='uni_accounts';
+function noSave(){try{return new Set(JSON.parse(localStorage.getItem('uni_nosave')||'[]'))}catch(e){return new Set()}}
+function setNoSave(id,on){try{const n=noSave();on?n.add(id):n.delete(id);localStorage.setItem('uni_nosave',JSON.stringify([...n]))}catch(e){}}
 function getAccts(){try{const a=JSON.parse(localStorage.getItem(AK)||'[]');return Array.isArray(a)?a:[]}catch(e){return[]}}
 function putAccts(a){try{localStorage.setItem(AK,JSON.stringify(a))}catch(e){}}
 function saveTokens(session){
   if(!session||!session.user)return;
   const a=getAccts(),i=a.findIndex(x=>x.id===session.user.id),m=session.user.user_metadata||{};
-  if(i<0&&AU.keep!==true)return;
+  if(AU.keep===false)setNoSave(session.user.id,true);else if(AU.keep===true)setNoSave(session.user.id,false);
+  if(i<0&&noSave().has(session.user.id))return;
   const base=i>=0?a[i]:{id:session.user.id,name:m.full_name||'Utilizador',username:m.username||'utilizador',avatar_url:null};
   const rec=Object.assign({},base,{email:session.user.email||base.email||'',access_token:session.access_token,refresh_token:session.refresh_token,expired:false});
   if(i>=0)a[i]=rec;else a.push(rec);
   putAccts(a);renderSaved()
 }
 function updAcct(){if(!ME.id)return;const a=getAccts(),i=a.findIndex(x=>x.id===ME.id);if(i<0)return;Object.assign(a[i],{name:ME.n,username:ME.u,avatar_url:ME.avatar_url||null});putAccts(a)}
-function rmAcct(id,ui){if(!id)return;putAccts(getAccts().filter(x=>x.id!==id));renderSaved();if(ui){showToast('Conta removida deste dispositivo.');go('Contas',1)}}
+function rmAcct(id,ui){if(!id)return;if(ui)setNoSave(id,true);putAccts(getAccts().filter(x=>x.id!==id));renderSaved();if(ui){showToast('Conta removida deste dispositivo.');go('Contas',1)}}
 function renderSaved(){
   const box=document.getElementById('saved');if(!box)return;
   const a=getAccts();
-  if(!a.length){box.innerHTML='';return}
-  box.innerHTML='<p class="small" style="margin:0 0 6px">Contas neste dispositivo</p>'+a.map(x=>`<div class="contact" style="cursor:pointer" onclick="switchTo('${esc(x.id)}')">${avHTML(x.avatar_url,x.name,'green')}<div class="contact-info"><strong>${esc(x.name)}</strong><small>@${esc(x.username)}${x.expired?' · sessão expirada':''}</small></div><span class="small">${x.id===ME.id?'ativa':'Entrar ›'}</span></div>`).join('')+'<hr style="border:0;border-top:1px solid var(--line);margin:14px 0">'
+  if(!a.length){box.innerHTML='';syncAuth(0);return}
+  box.innerHTML='<h2 class="h2" style="margin:0 0 8px">Contas neste dispositivo</h2>'+a.map(x=>`<div class="contact" style="cursor:pointer" onclick="switchTo('${esc(x.id)}')">${avHTML(x.avatar_url,x.name,'green')}<div class="contact-info"><strong>${esc(x.name)}</strong><small>@${esc(x.username)}${x.expired?' · precisa da palavra-passe':''}</small></div><span class="small">${x.id===ME.id?'ativa':'Entrar ›'}</span></div>`).join('')+'<div style="height:12px"></div>';syncAuth(a.length)
 }
+function syncAuth(n){const f=document.getElementById('authform'),b=document.getElementById('otherbtn');if(!f||!b)return;const hide=n>0&&!AU.showForm;f.style.display=hide?'none':'';b.hidden=!hide}
+function showOther(){AU.showForm=true;syncAuth(getAccts().length);const e=document.getElementById('li-e');if(e)e.focus()}
 function addAccount(a){
+  AU.showForm=true;
   document.body.classList.add('guest');
   document.getElementById('authcancel').hidden=!ME.id;
   amode('in');
   document.getElementById('li-e').value=(a&&a.email)||'';
   renderSaved();scrollTo(0,0)
 }
-function cancelAdd(){document.body.classList.remove('guest');document.getElementById('authcancel').hidden=true}
+function cancelAdd(){AU.showForm=false;document.body.classList.remove('guest');document.getElementById('authcancel').hidden=true}
 async function switchTo(id){
   const a=getAccts().find(x=>x.id===id);if(!a||!sb)return;
   if(ME.id===id){if(document.body.classList.contains('guest'))cancelAdd();else showToast('Esta conta já está ativa.');return}
@@ -477,11 +486,11 @@ async function switchTo(id){
   }
 }
 TITLES.Contas='Contas neste dispositivo';
-R.Contas=()=>{const a=getAccts();return `<div class="widget"><p class="small" style="margin:0 0 6px">Estas contas ficam guardadas só neste dispositivo, para mudares com um toque. Usa isto apenas em dispositivos teus.</p>${a.length?a.map(x=>`<div class="contact">${avHTML(x.avatar_url,x.name,'green')}<div class="contact-info"><strong>${esc(x.name)}</strong><small>@${esc(x.username)}${x.id===ME.id?' · ativa':x.expired?' · sessão expirada':''}</small></div>${x.id===ME.id?'':`<button class="fbtn" onclick="switchTo('${esc(x.id)}')">Mudar</button>`}<button class="chip" style="margin-left:6px" aria-label="Remover conta" onclick="rmAcct('${esc(x.id)}',true)">✕</button></div>`).join(''):'<p class="small">Ainda não há contas guardadas.</p>'}</div><div class="chips"><button class="chip on" onclick="addAccount()">＋ Adicionar outra conta</button></div>`};
+R.Contas=()=>{const a=getAccts();return `<h2 class="h2" style="margin-top:4px">1 · Contas neste dispositivo</h2><div class="widget"><p class="small" style="margin:0 0 6px">Ficam guardadas só neste dispositivo, para mudares com um toque. Usa isto apenas em dispositivos teus.</p>${a.length?a.map(x=>`<div class="contact">${avHTML(x.avatar_url,x.name,'green')}<div class="contact-info"><strong>${esc(x.name)}</strong><small>@${esc(x.username)}${x.id===ME.id?' · ativa':x.expired?' · precisa da palavra-passe':''}</small></div>${x.id===ME.id?'':`<button class="fbtn" onclick="switchTo('${esc(x.id)}')">Mudar</button>`}<button class="chip" style="margin-left:6px" aria-label="Remover conta" onclick="rmAcct('${esc(x.id)}',true)">✕</button></div>`).join(''):'<p class="small">Ainda não há contas guardadas.</p>'}</div><h2 class="h2">2 · Entrar com outra conta</h2><div class="widget"><p class="small" style="margin:0 0 10px">Abre o ecrã de entrada para iniciares sessão noutra conta. As contas guardadas continuam aqui.</p><button class="publish" style="width:100%" onclick="addAccount()">＋ Entrar com outra conta</button></div>`};
 function resetUserState(){
   DB.posts=[];FOLLOWING=new Set();FEED='all';LIKED=new Set();CHAT={uid:null,people:new Map()};STORIES=new Map();
   if(msgChan&&sb){sb.removeChannel(msgChan);msgChan=null}
-  const b=document.getElementById('mbadge');if(b)b.hidden=true;
+  setBadge(0);
   const fm=document.getElementById('feedMode');if(fm)fm.textContent='Todos ⌄';
   document.getElementById('feed').querySelectorAll('.post').forEach(e=>e.remove());
   refresh();renderStories()
@@ -614,7 +623,85 @@ async function scPost(){
   }catch(e){console.error(e);showToast('Erro ao publicar: '+(e.message||'tenta outra vez.'))}
   finally{btn.disabled=false;btn.textContent='Publicar história'}
 }
-async function onSession(session){if(!session){const was=ME.id;ME.id=null;resetUserState();DB.posts=[];FOLLOWING=new Set();FEED='all';CHAT={uid:null,people:new Map()};if(msgChan&&sb){sb.removeChannel(msgChan);msgChan=null}document.getElementById('mbadge').hidden=true;document.getElementById('feedMode').textContent='Todos ⌄';if(chan&&sb){sb.removeChannel(chan);chan=null}document.getElementById('feed').querySelectorAll('.post').forEach(e=>e.remove());refresh();document.body.classList.add('guest');amode('in');scrollTo(0,0);if(was)showToast('Sessão terminada.');return}
+
+// ===== PUBLICAR FOTOS, VÍDEOS E SENTIMENTOS =====
+const POSTCOLS='id,author_id,body,created_at,media_url,media_type,feeling';
+const PM={blob:null,kind:null,url:null,feeling:null};
+const FEELS=['😊 feliz','😍 apaixonado','🥳 animado','😎 confiante','🙏 grato','😌 tranquilo','🤔 pensativo','😴 cansado','😢 triste','😡 zangado','🤯 surpreendido','🤩 inspirado'];
+function pmPaint(){
+  const b=document.getElementById('mprev');if(!b)return;
+  b.innerHTML='';
+  if(PM.blob){
+    const w=document.createElement('div');w.className='mp';
+    const el=document.createElement(PM.kind==='image'?'img':'video');el.src=PM.url;
+    if(PM.kind==='video'){el.muted=true;el.controls=true;el.playsInline=true}else el.alt='Pré-visualização';
+    w.append(el);
+    const x=document.createElement('button');x.className='chip';x.textContent='✕';x.setAttribute('aria-label','Remover');x.onclick=()=>pmClear(true);w.append(x);
+    b.append(w)
+  }
+  if(PM.feeling){const c=document.createElement('button');c.className='chip on';c.textContent='sente-se '+PM.feeling+' ✕';c.onclick=()=>{PM.feeling=null;pmPaint()};b.append(c)}
+  b.hidden=!b.childNodes.length
+}
+function pmClear(onlyMedia){
+  if(PM.url)URL.revokeObjectURL(PM.url);
+  PM.blob=null;PM.kind=null;PM.url=null;if(!onlyMedia)PM.feeling=null;
+  const fp=document.getElementById('fpick');if(fp)fp.hidden=true;
+  pmPaint()
+}
+async function pmPick(inp,kind){
+  const f=inp.files&&inp.files[0];inp.value='';if(!f)return;
+  if(kind==='image'&&!f.type.startsWith('image/'))return showToast('Escolhe uma imagem.');
+  if(kind==='video'){
+    if(!f.type.startsWith('video/'))return showToast('Escolhe um vídeo.');
+    if(f.size>25*1024*1024)return showToast('O vídeo é demasiado grande (máximo 25 MB).')
+  }
+  try{
+    pmClear(true);
+    const blob=kind==='image'?await fitJpeg(f,1280):f;
+    PM.blob=blob;PM.kind=kind;PM.url=URL.createObjectURL(blob);pmPaint()
+  }catch(e){showToast('Erro: '+(e.message||'tenta outro ficheiro.'))}
+}
+function fpToggle(){
+  const fp=document.getElementById('fpick');if(!fp)return;
+  if(!fp.hidden){fp.hidden=true;return}
+  fp.innerHTML='';
+  FEELS.forEach(f=>{const b=document.createElement('button');b.type='button';b.textContent=f;b.onclick=()=>{PM.feeling=f;fp.hidden=true;pmPaint()};fp.append(b)});
+  fp.hidden=false
+}
+async function hydrate(posts){
+  const ids=[...new Set(posts.map(p=>p.author_id).filter(Boolean))];
+  let profiles=[];
+  if(ids.length){
+    const {data,error:pe}=await sb.from('profiles').select('id,username,full_name,avatar_url,bio,note,note_at').in('id',ids);
+    if(pe)console.warn('Não foi possível carregar alguns perfis:',pe);
+    profiles=data||[]
+  }
+  const postIds=posts.map(p=>p.id);
+  let likes=[];const cc=new Map();
+  if(postIds.length){
+    const {data,error:le}=await sb.from('likes').select('post_id,user_id').in('post_id',postIds);
+    if(le)console.warn('Não foi possível carregar os gostos:',le);
+    likes=data||[];
+    const {data:cs,error:ce}=await sb.from('comments').select('post_id').in('post_id',postIds);
+    if(ce)console.warn('Não foi possível carregar os comentários:',ce);
+    (cs||[]).forEach(c=>cc.set(c.post_id,(cc.get(c.post_id)||0)+1))
+  }
+  likes.filter(x=>x.user_id===ME.id).forEach(x=>LIKED.add(x.post_id));
+  const pm=new Map(profiles.map(p=>[p.id,p])),lc=new Map();
+  likes.forEach(l=>lc.set(l.post_id,(lc.get(l.post_id)||0)+1));
+  return posts.map(p=>({...p,t:p.body,ncom:cc.get(p.id)||0,author:pm.get(p.author_id)||{full_name:'Utilizador',username:'utilizador'},likes:[{count:lc.get(p.id)||0}]}))
+}
+R.Vídeos=()=>`<div id="vlist"><div class="widget empty">A carregar…</div></div>`;
+async function loadVideos(){
+  const box=document.getElementById('vlist');if(!box||!sb||!ME.id)return;
+  const {data,error}=await sb.from('posts').select(POSTCOLS).eq('media_type','video').order('created_at',{ascending:false}).limit(30);
+  if(error){console.warn(error);box.innerHTML='<div class="widget empty">Não foi possível carregar os vídeos.</div>';return}
+  if(!data.length){box.innerHTML='<div class="widget empty">Ainda não há vídeos.<br>Os vídeos publicados aparecem aqui.</div>';return}
+  const list=await hydrate(data);
+  if(!box.isConnected)return;
+  box.innerHTML='';list.forEach(p=>box.append(postEl(p)))
+}
+async function onSession(session){if(!session){const was=ME.id;ME.id=null;resetUserState();AU.showForm=false;renderSaved();DB.posts=[];FOLLOWING=new Set();FEED='all';CHAT={uid:null,people:new Map()};if(msgChan&&sb){sb.removeChannel(msgChan);msgChan=null}setBadge(0);document.getElementById('feedMode').textContent='Todos ⌄';if(chan&&sb){sb.removeChannel(chan);chan=null}document.getElementById('feed').querySelectorAll('.post').forEach(e=>e.remove());refresh();document.body.classList.add('guest');amode('in');scrollTo(0,0);if(was)showToast('Sessão terminada.');return}
 if(ME.id&&ME.id!==session.user.id)resetUserState();ME.id=session.user.id;const{data:p}=await sb.from('profiles').select('username,full_name,bio,avatar_url,note,note_at').eq('id',ME.id).maybeSingle();const m=session.user.user_metadata||{};Object.assign(ME,{bio:p?.bio||'',avatar_url:p?.avatar_url||null,note:p?.note||null,note_at:p?.note_at||null});enter(p?.full_name||m.full_name||'Utilizador',p?.username||m.username||'utilizador');await loadFollows();loadFeed();subMsgs();updUnread();loadStories();if(!chan)chan=sb.channel('feed').on('postgres_changes',{event:'*',schema:'public',table:'posts'},()=>loadFeed()).subscribe()}
 if(sb)sb.auth.onAuthStateChange((ev,session)=>{if(session&&(ev==='TOKEN_REFRESHED'||ev==='SIGNED_IN'||ev==='INITIAL_SESSION'))saveTokens(session);if(ev==='SIGNED_IN'&&session&&ME.id===session.user.id)return;if(ev==='INITIAL_SESSION'||ev==='SIGNED_IN'||ev==='SIGNED_OUT')setTimeout(()=>onSession(session),0)});
 else{const n=document.getElementById('authnote');n.textContent='Falta configurar o Supabase no código (SUPABASE_URL e SUPABASE_ANON_KEY).';n.style.color='var(--pink)'}

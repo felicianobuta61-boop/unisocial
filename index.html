@@ -47,6 +47,14 @@ body.guest .app,body.guest .mobile-nav{display:none}body:not(.guest) #auth{displ
 .cmts{border-top:1px solid var(--line);margin-top:12px;padding-top:4px}.cm{display:flex;gap:9px;margin:10px 0;align-items:flex-start}.cm .avatar{width:30px;height:30px;border-radius:11px;font-size:11px}.cm-b{flex:1;min-width:0;background:var(--panel2);border-radius:13px;padding:8px 12px;font-size:13px;line-height:1.45;word-break:break-word}.cm-b small{color:var(--muted);font-size:10px;display:block;margin-bottom:2px}.cm-x{background:transparent;color:var(--muted);font-size:13px;padding:4px}
 .chat-head{display:flex;align-items:center;gap:10px;padding-bottom:12px;margin-bottom:6px;border-bottom:1px solid var(--line)}.chat-head:empty{display:none}.back{display:none}.chat-head strong{font-size:14px}
 @media(max-width:720px){.back{display:inline-block}.chat.open-c #clist{display:none}.chat:not(.open-c) .cpane{display:none}.chat .msgs{height:55vh;min-height:240px}}
+.ov{position:fixed;inset:0;z-index:25;background:#05070b;display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}.ov[hidden]{display:none}
+.sv-bars{display:flex;gap:4px;padding:10px 12px 0}.sv-bars span{flex:1;height:3px;background:#ffffff33;border-radius:3px;overflow:hidden}.sv-bars i{display:block;height:100%;background:#fff;width:0}
+.sv-head{display:flex;align-items:center;gap:10px;padding:12px;color:#fff}.sv-head .person{flex:1;min-width:0}.sv-head .person small{color:#ffffffaa}
+.sv-body{flex:1;position:relative;overflow:hidden;min-height:0}.sv-body img{max-width:100%;max-height:100%;object-fit:contain}
+.sv-card{position:absolute;inset:0;display:grid;place-items:center;padding:30px;text-align:center;font-size:26px;font-weight:800;line-height:1.25;word-break:break-word;color:#fff}
+.sv-cap{position:absolute;left:0;right:0;bottom:0;padding:40px 18px 24px;background:linear-gradient(transparent,#000b);font-size:15px;text-align:center;word-break:break-word;color:#fff}
+.sv-tap{position:absolute;inset:0;display:flex;z-index:2}.sv-tap span{flex:1}.sv-tap span:last-child{flex:2}
+.sc-prev{position:relative;height:52vh;margin:6px 14px 12px;border-radius:20px;display:flex;overflow:hidden}.sc-prev textarea{width:100%;border:0;outline:none;resize:none;color:#fff;text-align:center;font-weight:800;font-family:inherit;padding:18px}
 </style>
 </head>
 <body class="guest">
@@ -71,7 +79,7 @@ body.guest .app,body.guest .mobile-nav{display:none}body:not(.guest) #auth{displ
   <header class="topbar"><div><div class="eyebrow">O teu mundo, conectado</div><h1 id="ttl">Olá! 👋</h1></div><div class="top-actions"><button class="round" aria-label="Pesquisar" onclick="go('Explorar')">⌕</button><button class="round" aria-label="Notificações" onclick="showToast('Não tens novas notificações')">🔔</button></div></header>
   <div class="view on" id="v-home"><input class="search" type="search" id="mobileSearch" aria-label="Pesquisar" placeholder="⌕  Pesquisa pessoas, publicações e grupos...">
   <section class="stories">
-    <div class="story" role="button" tabindex="0" onclick="showToast('Histórias — área demonstrativa.')"><div class="story-ring"><div class="story-inner">＋</div></div><div class="story-name">A tua história</div></div>
+    <div class="story" role="button" tabindex="0" onclick="scOpen()"><div class="story-ring"><div class="story-inner">＋</div></div><div class="story-name">A tua história</div></div>
   </section>
   <section class="composer">
     <div class="composer-top"><div class="avatar green">TU</div><input id="postInput" placeholder="O que queres partilhar hoje?" maxlength="240"></div>
@@ -92,11 +100,11 @@ body.guest .app,body.guest .mobile-nav{display:none}body:not(.guest) #auth{displ
 <nav class="mobile-nav"><button class="active" onclick="mobileTab(this,'Início')">⌂</button><button onclick="mobileTab(this,'Explorar')">⌕</button><button onclick="mobileTab(this,'Publicar')">⊕</button><button onclick="mobileTab(this,'Mensagens')">▤</button><button onclick="mobileTab(this,'Perfil')">☻</button></nav>
 <section id="auth">
 <div class="hero"><div class="brand" style="margin:0"><div class="brandmark">U</div><div>uni<span>social</span></div></div><h2>Liga o teu <span>mundo</span>.</h2><p>Publicações, mensagens, histórias e grupos num só lugar, com um design pensado para ti.</p><ul><li>Partilha momentos com quem importa</li><li>Conversa em privado ou em grupo</li><li>Descobre vídeos, pessoas e comunidades</li></ul></div>
-<div class="authcard"><div class="seg"><button type="button" class="on" onclick="amode('in')">Entrar</button><button type="button" onclick="amode('up')">Criar conta</button></div><h1 id="atitle" style="font-size:22px;letter-spacing:-.5px;margin:0 0 18px">Bem-vindo de volta</h1>
+<div class="authcard"><button type="button" class="link" id="authcancel" hidden onclick="cancelAdd()" style="margin-bottom:14px">← Voltar à conta atual</button><div id="saved"></div><div class="seg"><button type="button" class="on" onclick="amode('in')">Entrar</button><button type="button" onclick="amode('up')">Criar conta</button></div><h1 id="atitle" style="font-size:22px;letter-spacing:-.5px;margin:0 0 18px">Bem-vindo de volta</h1>
 <form id="f-in" novalidate onsubmit="return auth(event)">
 <label class="fld">Email<input id="li-e" type="email" autocomplete="email" placeholder="nome@exemplo.com"><span class="err"></span></label>
 <label class="fld">Palavra-passe<span class="pw"><input id="li-p" type="password" autocomplete="current-password" placeholder="A tua palavra-passe"><button type="button" onclick="tp('li-p',this)">Mostrar</button></span><span class="err"></span></label>
-<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px"><label class="fld chk" style="margin:0"><input type="checkbox" checked>Manter sessão</label><button type="button" class="link" onclick="forgot()">Esqueceste-te da palavra-passe?</button></div>
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px"><label class="fld chk" style="margin:0"><input type="checkbox" id="li-k" checked>Guardar conta neste dispositivo</label><button type="button" class="link" onclick="forgot()">Esqueceste-te da palavra-passe?</button></div>
 <button class="publish" type="submit">Entrar ↗</button></form>
 <form id="f-up" style="display:none" novalidate onsubmit="return auth(event)">
 <label class="fld">Nome completo<input id="su-n" autocomplete="name" placeholder="O teu nome"><span class="err"></span></label>
@@ -108,6 +116,17 @@ body.guest .app,body.guest .mobile-nav{display:none}body:not(.guest) #auth{displ
 <button class="publish" type="submit">Criar conta ↗</button></form>
 <p class="small" id="authnote" style="margin:16px 0 0;text-align:center">Ao continuares, aceitas os Termos e a Política de Privacidade.</p></div>
 </section>
+<div class="ov" id="sv" hidden>
+<div class="sv-bars" id="svbars"></div>
+<div class="sv-head" id="svhead"></div>
+<div class="sv-body"><div id="svmedia" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center"></div><div class="sv-tap"><span onclick="svStep(-1)"></span><span onclick="svStep(1)"></span></div></div>
+</div>
+<div class="ov" id="sc" hidden style="background:var(--bg)">
+<div class="sv-head"><button class="chip" onclick="scClose()" aria-label="Fechar">✕</button><strong style="flex:1">Nova história</strong></div>
+<div class="sc-prev" id="scprev"><textarea id="sctext" maxlength="140" rows="4"></textarea></div>
+<div style="display:flex;gap:8px;align-items:center;padding:0 14px 10px;flex-wrap:wrap"><button class="chip" onclick="document.getElementById('sf').click()">▧ Foto</button><input type="file" id="sf" accept="image/*" hidden onchange="scPhoto(this)"><button class="chip" onclick="scText()">Aa Texto</button><span id="scsw" style="display:flex;gap:6px"></span></div>
+<div style="padding:0 14px 14px"><button class="publish" id="scbtn" style="width:100%;padding:14px" onclick="scPost()">Publicar história</button></div>
+</div>
 <div class="toast" id="toast"></div>
 <script>
 // ===== CONFIGURAÇÃO DO SUPABASE (Project Settings > API) =====
@@ -164,19 +183,19 @@ Histórias:()=>`<div class="grid"><div class="story" onclick="showToast('As hist
 Vídeos:()=>emp('Ainda não há vídeos.<br>Os vídeos publicados aparecem aqui.'),
 Grupos:()=>`<div class="widget"><div class="composer-top"><input id="gn" class="gi" placeholder="Nome do novo grupo" maxlength="40" onkeydown="if(event.key==='Enter')mkg()"><button class="publish" onclick="mkg()">Criar grupo</button></div></div>`+(DB.groups.length?`<div class="widget">${DB.groups.map(g=>`<div class="contact"><div class="avatar purple">${esc(g[0])}</div><div class="contact-info"><strong>${esc(g)}</strong><small>1 membro · tu</small></div></div>`).join('')}</div>`:emp('Ainda não pertences a nenhum grupo.<br>Cria o primeiro!')),
 Guardados:()=>emp('Ainda não guardaste nada.'),
-Definições:()=>`<div class="widget">${['Notificações push','Perfil privado','Sons da aplicação','Mostrar estado online'].map((x,i)=>`<label class="row">${x}<input type="checkbox" ${i==0||i==3?'checked':''} onchange="showToast('${x}: '+(this.checked?'ativado':'desativado'))"></label>`).join('')}</div><div class="widget"><button class="chip" onclick="logout()">Terminar sessão</button></div>`,
-Perfil:()=>`<div class="widget" style="text-align:center">${nact(ME)?`<div style="display:inline-block;background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:6px 12px;font-size:12px;margin-bottom:8px;max-width:80%;word-break:break-word">${esc(ME.note)}</div><br>`:''}${avHTML(ME.avatar_url,ME.n,'green','width:72px;height:72px;margin:0 auto 10px;font-size:22px')}<strong>${esc(ME.n)}</strong><br><small style="color:var(--muted)">@${esc(ME.u)}</small>${ME.bio?`<p class="small" style="margin:8px 0 0">${esc(ME.bio)}</p>`:''}<div class="grid" style="margin-top:16px"><div><strong>${DB.posts.filter(p=>p.author_id===ME.id).length}</strong><br><small>Publicações</small></div><div><strong id="pfers">0</strong><br><small>Seguidores</small></div><div><strong id="pfing">${FOLLOWING.size}</strong><br><small>A seguir</small></div></div></div><div class="chips"><button class="chip on" onclick="go('EditarPerfil')">Editar perfil</button><button class="chip" onclick="go('Definições')">Definições</button></div>`};
+Definições:()=>`<div class="widget">${['Notificações push','Perfil privado','Sons da aplicação','Mostrar estado online'].map((x,i)=>`<label class="row">${x}<input type="checkbox" ${i==0||i==3?'checked':''} onchange="showToast('${x}: '+(this.checked?'ativado':'desativado'))"></label>`).join('')}</div><div class="widget" style="display:flex;gap:8px;flex-wrap:wrap"><button class="chip" onclick="go('Contas')">Contas neste dispositivo</button><button class="chip" onclick="logout()">Terminar sessão</button></div>`,
+Perfil:()=>`<div class="widget" style="text-align:center">${nact(ME)?`<div style="display:inline-block;background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:6px 12px;font-size:12px;margin-bottom:8px;max-width:80%;word-break:break-word">${esc(ME.note)}</div><br>`:''}${avHTML(ME.avatar_url,ME.n,'green','width:72px;height:72px;margin:0 auto 10px;font-size:22px')}<strong>${esc(ME.n)}</strong><br><small style="color:var(--muted)">@${esc(ME.u)}</small>${ME.bio?`<p class="small" style="margin:8px 0 0">${esc(ME.bio)}</p>`:''}<div class="grid" style="margin-top:16px"><div><strong>${DB.posts.filter(p=>p.author_id===ME.id).length}</strong><br><small>Publicações</small></div><div><strong id="pfers">0</strong><br><small>Seguidores</small></div><div><strong id="pfing">${FOLLOWING.size}</strong><br><small>A seguir</small></div></div></div><div class="chips"><button class="chip on" onclick="go('EditarPerfil')">Editar perfil</button><button class="chip" onclick="go('Definições')">Definições</button><button class="chip" onclick="go('Contas')">Contas</button></div>`};
 refresh();
-function go(t,keep){if(t!=='Mensagens')CHAT.uid=null;const home=t==='Início',pg=document.getElementById('pg');document.getElementById('ttl').textContent=TITLES[t]||t;document.getElementById('v-home').classList.toggle('on',home);pg.classList.toggle('on',!home);if(!home){pg.innerHTML=R[t]?R[t]():'';if(t==='Explorar')loadPeople();if(t==='Mensagens')loadChats(true);if(t==='Perfil')profCounts()}document.querySelectorAll('.nav button[data-tab]').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));document.querySelectorAll('.mobile-nav button').forEach(b=>b.classList.toggle('active',(b.getAttribute('onclick')||'').includes("'"+t+"'")));if(t==='Mensagens'){const m=document.getElementById('msgs');if(m)m.scrollTop=m.scrollHeight}if(!keep)scrollTo({top:0,behavior:'smooth'})}
-document.querySelectorAll('.story[role="button"]').forEach(el=>el.onclick=()=>go('Histórias'));
+function go(t,keep){if(t!=='Mensagens')CHAT.uid=null;const home=t==='Início',pg=document.getElementById('pg');document.getElementById('ttl').textContent=TITLES[t]||t;document.getElementById('v-home').classList.toggle('on',home);pg.classList.toggle('on',!home);if(!home){pg.innerHTML=R[t]?R[t]():'';if(t==='Explorar')loadPeople();if(t==='Mensagens')loadChats(true);if(t==='Perfil')profCounts()}if((t==='Início'||t==='Histórias')&&sb&&ME.id){renderStories();loadStories()}document.querySelectorAll('.nav button[data-tab]').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));document.querySelectorAll('.mobile-nav button').forEach(b=>b.classList.toggle('active',(b.getAttribute('onclick')||'').includes("'"+t+"'")));if(t==='Mensagens'){const m=document.getElementById('msgs');if(m)m.scrollTop=m.scrollHeight}if(!keep)scrollTo({top:0,behavior:'smooth'})}
+
 const ME={n:'O teu perfil',u:'teu_perfil',i:'TU'},AU={mode:'in'},EM=/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 function amode(m){AU.mode=m;document.getElementById('f-in').style.display=m==='in'?'block':'none';document.getElementById('f-up').style.display=m==='up'?'block':'none';document.querySelectorAll('.seg button').forEach((b,i)=>b.classList.toggle('on',(i===0)===(m==='in')));document.getElementById('atitle').textContent=m==='in'?'Bem-vindo de volta':'Cria a tua conta'}
 function bad(id,msg){const l=document.getElementById(id).closest('.fld');l.classList.toggle('bad',!!msg);l.querySelector('.err').textContent=msg||'';return !msg}
 function tp(id,b){const i=document.getElementById(id),s=i.type==='password';i.type=s?'text':'password';b.textContent=s?'Esconder':'Mostrar'}
 function strength(v){const n=(v.length>=8)+(/[A-Z]/.test(v)&&/[a-z]/.test(v))+/\d/.test(v)+/[^A-Za-z0-9]/.test(v);document.getElementById('ps').textContent=v?'Força: '+['fraca','fraca','média','boa','forte'][n]:''}
-function applyUser(){TITLES['Início']='Olá, '+ME.n.split(' ')[0]+'! 👋';document.querySelectorAll('.mini-profile .avatar,.composer .avatar').forEach(a=>setAv(a,ME.avatar_url,ME.i));const m=document.querySelector('.mini-profile');m.querySelector('strong').textContent=ME.n;m.querySelector('small').textContent='@'+ME.u}
-function enter(n,u){Object.assign(ME,{n,u,i:n.split(/\s+/).slice(0,2).map(w=>w[0]).join('').toUpperCase()});applyUser();document.body.classList.remove('guest');document.querySelectorAll('#auth input[type=password]').forEach(i=>i.value='');go('Início');showToast('Bem-vindo, '+n.split(' ')[0]+'!')}
-function logout(){if(sb)sb.auth.signOut();else onSession(null)}
+function applyUser(){TITLES['Início']='Olá, '+ME.n.split(' ')[0]+'! 👋';document.querySelectorAll('.mini-profile .avatar,.composer .avatar').forEach(a=>setAv(a,ME.avatar_url,ME.i));const m=document.querySelector('.mini-profile');m.querySelector('strong').textContent=ME.n;m.querySelector('small').textContent='@'+ME.u;updAcct()}
+function enter(n,u){document.getElementById('authcancel').hidden=true;Object.assign(ME,{n,u,i:n.split(/\s+/).slice(0,2).map(w=>w[0]).join('').toUpperCase()});applyUser();document.body.classList.remove('guest');document.querySelectorAll('#auth input[type=password]').forEach(i=>i.value='');go('Início');showToast('Bem-vindo, '+n.split(' ')[0]+'!')}
+async function logout(){const id=ME.id;if(sb){await sb.auth.signOut();rmAcct(id)}else onSession(null)}
 const SB_OK=typeof supabase!=='undefined'&&!SUPABASE_URL.startsWith('COLE')&&!SUPABASE_ANON_KEY.startsWith('COLE');
 const sb=SB_OK?supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY):null;
 let LIKED=new Set(),chan=null;
@@ -264,6 +283,7 @@ async function toggleFollow(uid){
   const r=on?await sb.from('follows').insert({follower_id:ME.id,following_id:uid}):await sb.from('follows').delete().match({follower_id:ME.id,following_id:uid});
   if(r.error){paintFollow(uid,!on);console.error(r.error);return showToast('Não foi possível atualizar: '+r.error.message)}
   if(FEED==='following')loadFeed();
+  loadStories();
 }
 async function loadPeople(){
   const box=document.getElementById('people');if(!box)return;
@@ -414,15 +434,196 @@ async function saveProfile(){
   Object.assign(ME,{n,i:ini(n),bio:upd.bio||''});if('note'in upd){ME.note=upd.note;ME.note_at=upd.note_at}
   applyUser();showToast('Perfil guardado!');go('Perfil');loadFeed()
 }
-async function onSession(session){if(!session){const was=ME.id;ME.id=null;DB.posts=[];FOLLOWING=new Set();FEED='all';CHAT={uid:null,people:new Map()};if(msgChan&&sb){sb.removeChannel(msgChan);msgChan=null}document.getElementById('mbadge').hidden=true;document.getElementById('feedMode').textContent='Todos ⌄';if(chan&&sb){sb.removeChannel(chan);chan=null}document.getElementById('feed').querySelectorAll('.post').forEach(e=>e.remove());refresh();document.body.classList.add('guest');amode('in');scrollTo(0,0);if(was)showToast('Sessão terminada.');return}
-ME.id=session.user.id;const{data:p}=await sb.from('profiles').select('username,full_name,bio,avatar_url,note,note_at').eq('id',ME.id).maybeSingle();const m=session.user.user_metadata||{};Object.assign(ME,{bio:p?.bio||'',avatar_url:p?.avatar_url||null,note:p?.note||null,note_at:p?.note_at||null});enter(p?.full_name||m.full_name||'Utilizador',p?.username||m.username||'utilizador');await loadFollows();loadFeed();subMsgs();updUnread();if(!chan)chan=sb.channel('feed').on('postgres_changes',{event:'*',schema:'public',table:'posts'},()=>loadFeed()).subscribe()}
-if(sb)sb.auth.onAuthStateChange((ev,session)=>{if(ev==='SIGNED_IN'&&session&&ME.id===session.user.id)return;if(ev==='INITIAL_SESSION'||ev==='SIGNED_IN'||ev==='SIGNED_OUT')setTimeout(()=>onSession(session),0)});
+
+// ===== CONTAS GUARDADAS NESTE DISPOSITIVO =====
+const AK='uni_accounts';
+function getAccts(){try{const a=JSON.parse(localStorage.getItem(AK)||'[]');return Array.isArray(a)?a:[]}catch(e){return[]}}
+function putAccts(a){try{localStorage.setItem(AK,JSON.stringify(a))}catch(e){}}
+function saveTokens(session){
+  if(!session||!session.user)return;
+  const a=getAccts(),i=a.findIndex(x=>x.id===session.user.id),m=session.user.user_metadata||{};
+  if(i<0&&AU.keep!==true)return;
+  const base=i>=0?a[i]:{id:session.user.id,name:m.full_name||'Utilizador',username:m.username||'utilizador',avatar_url:null};
+  const rec=Object.assign({},base,{email:session.user.email||base.email||'',access_token:session.access_token,refresh_token:session.refresh_token,expired:false});
+  if(i>=0)a[i]=rec;else a.push(rec);
+  putAccts(a);renderSaved()
+}
+function updAcct(){if(!ME.id)return;const a=getAccts(),i=a.findIndex(x=>x.id===ME.id);if(i<0)return;Object.assign(a[i],{name:ME.n,username:ME.u,avatar_url:ME.avatar_url||null});putAccts(a)}
+function rmAcct(id,ui){if(!id)return;putAccts(getAccts().filter(x=>x.id!==id));renderSaved();if(ui){showToast('Conta removida deste dispositivo.');go('Contas',1)}}
+function renderSaved(){
+  const box=document.getElementById('saved');if(!box)return;
+  const a=getAccts();
+  if(!a.length){box.innerHTML='';return}
+  box.innerHTML='<p class="small" style="margin:0 0 6px">Contas neste dispositivo</p>'+a.map(x=>`<div class="contact" style="cursor:pointer" onclick="switchTo('${esc(x.id)}')">${avHTML(x.avatar_url,x.name,'green')}<div class="contact-info"><strong>${esc(x.name)}</strong><small>@${esc(x.username)}${x.expired?' · sessão expirada':''}</small></div><span class="small">${x.id===ME.id?'ativa':'Entrar ›'}</span></div>`).join('')+'<hr style="border:0;border-top:1px solid var(--line);margin:14px 0">'
+}
+function addAccount(a){
+  document.body.classList.add('guest');
+  document.getElementById('authcancel').hidden=!ME.id;
+  amode('in');
+  document.getElementById('li-e').value=(a&&a.email)||'';
+  renderSaved();scrollTo(0,0)
+}
+function cancelAdd(){document.body.classList.remove('guest');document.getElementById('authcancel').hidden=true}
+async function switchTo(id){
+  const a=getAccts().find(x=>x.id===id);if(!a||!sb)return;
+  if(ME.id===id){if(document.body.classList.contains('guest'))cancelAdd();else showToast('Esta conta já está ativa.');return}
+  if(a.expired||!a.refresh_token||!a.access_token){addAccount(a);return}
+  showToast('A mudar para '+(a.name||'conta').split(' ')[0]+'…');
+  const{error}=await sb.auth.setSession({access_token:a.access_token,refresh_token:a.refresh_token});
+  if(error){
+    console.warn(error);
+    const l=getAccts(),i=l.findIndex(x=>x.id===id);if(i>=0){l[i].expired=true;l[i].access_token=null;l[i].refresh_token=null;putAccts(l)}
+    showToast('A sessão desta conta expirou. Entra outra vez.');addAccount(a)
+  }
+}
+TITLES.Contas='Contas neste dispositivo';
+R.Contas=()=>{const a=getAccts();return `<div class="widget"><p class="small" style="margin:0 0 6px">Estas contas ficam guardadas só neste dispositivo, para mudares com um toque. Usa isto apenas em dispositivos teus.</p>${a.length?a.map(x=>`<div class="contact">${avHTML(x.avatar_url,x.name,'green')}<div class="contact-info"><strong>${esc(x.name)}</strong><small>@${esc(x.username)}${x.id===ME.id?' · ativa':x.expired?' · sessão expirada':''}</small></div>${x.id===ME.id?'':`<button class="fbtn" onclick="switchTo('${esc(x.id)}')">Mudar</button>`}<button class="chip" style="margin-left:6px" aria-label="Remover conta" onclick="rmAcct('${esc(x.id)}',true)">✕</button></div>`).join(''):'<p class="small">Ainda não há contas guardadas.</p>'}</div><div class="chips"><button class="chip on" onclick="addAccount()">＋ Adicionar outra conta</button></div>`};
+function resetUserState(){
+  DB.posts=[];FOLLOWING=new Set();FEED='all';LIKED=new Set();CHAT={uid:null,people:new Map()};STORIES=new Map();
+  if(msgChan&&sb){sb.removeChannel(msgChan);msgChan=null}
+  const b=document.getElementById('mbadge');if(b)b.hidden=true;
+  const fm=document.getElementById('feedMode');if(fm)fm.textContent='Todos ⌄';
+  document.getElementById('feed').querySelectorAll('.post').forEach(e=>e.remove());
+  refresh();renderStories()
+}
+
+// ===== HISTÓRIAS (24 h) =====
+const BGS=['linear-gradient(135deg,#252b49,#ff8b9d)','linear-gradient(135deg,#152b34,#c8ff55)','linear-gradient(135deg,#3b2a6b,#65f0d3)','linear-gradient(135deg,#4a2340,#ffbd8c)','linear-gradient(135deg,#1f3a5a,#8d9aff)'];
+let STORIES=new Map();
+const SV={order:[],a:null,i:0,t:null},SC={blob:null,url:null,bg:0};
+function seenSet(){try{return new Set(JSON.parse(localStorage.getItem('uni_seen')||'[]'))}catch(e){return new Set()}}
+function markSeen(id){try{const s=seenSet();if(s.has(id))return;s.add(id);localStorage.setItem('uni_seen',JSON.stringify([...s].slice(-300)))}catch(e){}}
+function unseen(aid){const s=seenSet(),g=STORIES.get(aid);return !!g&&g.items.some(x=>!s.has(x.id))}
+function storyOrder(){
+  const ids=[...STORIES.keys()].filter(x=>x!==ME.id),late=a=>new Date(STORIES.get(a).items.slice(-1)[0].created_at);
+  ids.sort((a,b)=>{const ua=unseen(a),ub=unseen(b);if(ua!==ub)return ua?-1:1;return late(b)-late(a)});
+  return STORIES.has(ME.id)?[ME.id,...ids]:ids
+}
+async function loadStories(){
+  if(!sb||!ME.id)return;
+  const{data,error}=await sb.from('stories').select('id,author_id,image_url,text,bg,created_at,expires_at').gt('expires_at',new Date().toISOString()).order('created_at',{ascending:true});
+  if(error){console.warn('Não foi possível carregar as histórias:',error);return}
+  const ids=[...new Set(data.map(x=>x.author_id))];let pm=new Map();
+  if(ids.length){const{data:pr}=await sb.from('profiles').select('id,username,full_name,avatar_url').in('id',ids);pm=new Map((pr||[]).map(x=>[x.id,x]))}
+  const m=new Map();
+  data.forEach(x=>{if(!m.has(x.author_id))m.set(x.author_id,{u:pm.get(x.author_id)||{id:x.author_id,full_name:'Utilizador',username:'utilizador'},items:[]});m.get(x.author_id).items.push(x)});
+  STORIES=m;renderStories()
+}
+function renderStories(){
+  const bar=document.querySelector('.stories');
+  if(bar){
+    bar.querySelectorAll('[data-sa]').forEach(e=>e.remove());
+    storyOrder().forEach(id=>{
+      const g=STORIES.get(id),d=document.createElement('div');
+      d.className='story';d.setAttribute('role','button');d.tabIndex=0;d.dataset.sa=id;
+      d.innerHTML='<div class="story-ring"><div class="story-inner"></div></div><div class="story-name"></div>';
+      if(!unseen(id))d.querySelector('.story-ring').classList.add('seen');
+      setAv(d.querySelector('.story-inner'),g.u.avatar_url,ini(g.u.full_name||'?'));
+      d.querySelector('.story-name').textContent=id===ME.id?'Tu':(g.u.full_name||'').split(' ')[0];
+      d.onclick=()=>openStory(id);d.onkeydown=e=>{if(e.key==='Enter')d.click()};
+      bar.append(d)
+    })
+  }
+  const sl=document.getElementById('slist');
+  if(sl){
+    const o=storyOrder();
+    sl.innerHTML=o.length?'<div class="widget">'+o.map(id=>{const g=STORIES.get(id),n=g.items.length;return `<div class="contact" style="cursor:pointer" onclick="openStory('${esc(id)}')">${avHTML(g.u.avatar_url,g.u.full_name||'?',unseen(id)?'green':'blue')}<div class="contact-info"><strong>${esc(id===ME.id?'As tuas histórias':(g.u.full_name||'Utilizador'))}</strong><small>${n} ${n>1?'histórias':'história'} · ${ago(g.items[n-1].created_at)}</small></div></div>`}).join('')+'</div>':emp('Ainda não há histórias.<br>Segue pessoas ou cria a tua!')
+  }
+}
+R.Histórias=()=>`<div class="widget"><button class="publish" style="width:100%" onclick="scOpen()">＋ Criar história</button></div><h2 class="h2">Histórias</h2><div id="slist"></div>`;
+function openStory(aid){
+  if(!STORIES.has(aid))return;
+  SV.order=storyOrder();SV.a=aid;
+  const s=seenSet(),k=STORIES.get(aid).items.findIndex(x=>!s.has(x.id));SV.i=k<0?0:k;
+  document.getElementById('sv').hidden=false;svShow()
+}
+function svShow(){
+  clearTimeout(SV.t);
+  const g=STORIES.get(SV.a);if(!g)return svClose();
+  const it=g.items[SV.i];if(!it)return svNextAuthor();
+  markSeen(it.id);
+  document.getElementById('svbars').innerHTML=g.items.map((_,k)=>`<span><i style="width:${k<SV.i?'100%':'0'}"></i></span>`).join('');
+  const mine=SV.a===ME.id,hd=document.getElementById('svhead');
+  hd.innerHTML=`${avHTML(g.u.avatar_url,g.u.full_name||'?','green','width:36px;height:36px;border-radius:13px;font-size:12px')}<div class="person"><strong style="font-size:14px"></strong><small style="display:block;font-size:11px;margin-top:2px"></small></div>${mine?'<button class="chip" onclick="svDel()" aria-label="Apagar história">🗑</button>':''}<button class="chip" onclick="svClose()" aria-label="Fechar">✕</button>`;
+  hd.querySelector('strong').textContent=mine?'Tu':(g.u.full_name||'Utilizador');
+  hd.querySelector('small').textContent=ago(it.created_at);
+  const md=document.getElementById('svmedia');md.innerHTML='';
+  const okImg=it.image_url&&it.image_url.startsWith(SUPABASE_URL+'/storage/');
+  if(okImg){const im=document.createElement('img');im.src=it.image_url;im.alt='';md.append(im);if(it.text){const c=document.createElement('div');c.className='sv-cap';c.textContent=it.text;md.append(c)}}
+  else{const c=document.createElement('div');c.className='sv-card';c.style.background=BGS[it.bg]||BGS[0];c.textContent=it.text||'';md.append(c)}
+  const bi=document.querySelectorAll('#svbars i')[SV.i];
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{if(bi){bi.style.transition='width 5s linear';bi.style.width='100%'}}));
+  SV.t=setTimeout(()=>svStep(1),5000)
+}
+function svStep(d){
+  const g=STORIES.get(SV.a);if(!g)return svClose();
+  const n=SV.i+d;
+  if(n<0){const k=SV.order.indexOf(SV.a);if(k>0){SV.a=SV.order[k-1];SV.i=0}else SV.i=0;return svShow()}
+  if(n>=g.items.length)return svNextAuthor();
+  SV.i=n;svShow()
+}
+function svNextAuthor(){const k=SV.order.indexOf(SV.a);if(k>=0&&k<SV.order.length-1){SV.a=SV.order[k+1];SV.i=0;svShow()}else svClose()}
+function svClose(){clearTimeout(SV.t);document.getElementById('sv').hidden=true;renderStories()}
+async function svDel(){
+  const g=STORIES.get(SV.a),it=g&&g.items[SV.i];if(!it||it.author_id!==ME.id)return;
+  clearTimeout(SV.t);
+  if(!confirm('Apagar esta história?'))return svShow();
+  const{error}=await sb.from('stories').delete().eq('id',it.id);
+  if(error){console.error(error);showToast('Não foi possível apagar: '+error.message);return svShow()}
+  if(it.image_url&&it.image_url.includes('/stories/'))sb.storage.from('stories').remove([decodeURIComponent(it.image_url.split('/stories/')[1].split('?')[0])]);
+  g.items.splice(SV.i,1);
+  showToast('História apagada.');
+  if(!g.items.length){STORIES.delete(SV.a);return svClose()}
+  SV.i=Math.min(SV.i,g.items.length-1);svShow()
+}
+function fitJpeg(file,max){return new Promise((res,rej)=>{const img=new Image(),u=URL.createObjectURL(file);img.onload=()=>{const k=Math.min(1,max/Math.max(img.width,img.height)),c=document.createElement('canvas');c.width=Math.round(img.width*k);c.height=Math.round(img.height*k);c.getContext('2d').drawImage(img,0,0,c.width,c.height);URL.revokeObjectURL(u);c.toBlob(b=>b?res(b):rej(new Error('Falha ao processar a imagem')),'image/jpeg',.82)};img.onerror=()=>{URL.revokeObjectURL(u);rej(new Error('Formato de imagem não suportado'))};img.src=u})}
+function scPaint(){
+  const pv=document.getElementById('scprev'),ta=document.getElementById('sctext');
+  if(SC.blob){pv.style.background='#000 center/contain no-repeat url("'+SC.url+'")';pv.style.alignItems='flex-end';ta.placeholder='Legenda (opcional)';ta.style.fontSize='16px';ta.style.background='linear-gradient(transparent,#000b)';ta.rows=2}
+  else{pv.style.background=BGS[SC.bg];pv.style.alignItems='center';ta.placeholder='Escreve algo...';ta.style.fontSize='26px';ta.style.background='transparent';ta.rows=4}
+}
+function scOpen(){
+  if(!sb||!ME.id)return showToast('Entra na tua conta para criar uma história.');
+  scText();SC.bg=0;document.getElementById('sctext').value='';
+  document.getElementById('scsw').innerHTML=BGS.map((b,i)=>`<button type="button" aria-label="Fundo ${i+1}" onclick="SC.bg=${i};scText()" style="width:26px;height:26px;border-radius:50%;background:${b};border:2px solid var(--line)"></button>`).join('');
+  scPaint();document.getElementById('sc').hidden=false
+}
+function scClose(){document.getElementById('sc').hidden=true}
+function scText(){SC.blob=null;if(SC.url){URL.revokeObjectURL(SC.url);SC.url=null}scPaint()}
+async function scPhoto(inp){
+  const f=inp.files&&inp.files[0];inp.value='';if(!f)return;
+  if(!f.type.startsWith('image/'))return showToast('Escolhe uma imagem.');
+  try{const b=await fitJpeg(f,1080);scText();SC.blob=b;SC.url=URL.createObjectURL(b);scPaint()}
+  catch(e){showToast('Erro na foto: '+(e.message||'tenta outra imagem.'))}
+}
+async function scPost(){
+  const text=document.getElementById('sctext').value.trim(),btn=document.getElementById('scbtn');
+  if(!SC.blob&&!text)return showToast('Escolhe uma foto ou escreve algo.');
+  btn.disabled=true;btn.textContent='A publicar…';
+  try{
+    let image_url=null;
+    if(SC.blob){
+      const path=ME.id+'/'+Date.now()+'.jpg';
+      const{error}=await sb.storage.from('stories').upload(path,SC.blob,{contentType:'image/jpeg'});
+      if(error)throw error;
+      image_url=sb.storage.from('stories').getPublicUrl(path).data.publicUrl
+    }
+    const{error:e2}=await sb.from('stories').insert({author_id:ME.id,image_url,text:text||null,bg:SC.bg});
+    if(e2)throw e2;
+    scClose();showToast('História publicada! Fica visível 24 h.');loadStories()
+  }catch(e){console.error(e);showToast('Erro ao publicar: '+(e.message||'tenta outra vez.'))}
+  finally{btn.disabled=false;btn.textContent='Publicar história'}
+}
+async function onSession(session){if(!session){const was=ME.id;ME.id=null;resetUserState();DB.posts=[];FOLLOWING=new Set();FEED='all';CHAT={uid:null,people:new Map()};if(msgChan&&sb){sb.removeChannel(msgChan);msgChan=null}document.getElementById('mbadge').hidden=true;document.getElementById('feedMode').textContent='Todos ⌄';if(chan&&sb){sb.removeChannel(chan);chan=null}document.getElementById('feed').querySelectorAll('.post').forEach(e=>e.remove());refresh();document.body.classList.add('guest');amode('in');scrollTo(0,0);if(was)showToast('Sessão terminada.');return}
+if(ME.id&&ME.id!==session.user.id)resetUserState();ME.id=session.user.id;const{data:p}=await sb.from('profiles').select('username,full_name,bio,avatar_url,note,note_at').eq('id',ME.id).maybeSingle();const m=session.user.user_metadata||{};Object.assign(ME,{bio:p?.bio||'',avatar_url:p?.avatar_url||null,note:p?.note||null,note_at:p?.note_at||null});enter(p?.full_name||m.full_name||'Utilizador',p?.username||m.username||'utilizador');await loadFollows();loadFeed();subMsgs();updUnread();loadStories();if(!chan)chan=sb.channel('feed').on('postgres_changes',{event:'*',schema:'public',table:'posts'},()=>loadFeed()).subscribe()}
+if(sb)sb.auth.onAuthStateChange((ev,session)=>{if(session&&(ev==='TOKEN_REFRESHED'||ev==='SIGNED_IN'||ev==='INITIAL_SESSION'))saveTokens(session);if(ev==='SIGNED_IN'&&session&&ME.id===session.user.id)return;if(ev==='INITIAL_SESSION'||ev==='SIGNED_IN'||ev==='SIGNED_OUT')setTimeout(()=>onSession(session),0)});
 else{const n=document.getElementById('authnote');n.textContent='Falta configurar o Supabase no código (SUPABASE_URL e SUPABASE_ANON_KEY).';n.style.color='var(--pink)'}
+renderSaved();
 async function forgot(){const em=document.getElementById('li-e').value.trim();if(!sb)return showToast('Supabase não configurado.');if(!EM.test(em))return bad('li-e','Indica o teu email para recuperar a palavra-passe.');bad('li-e','');await sb.auth.resetPasswordForEmail(em);showToast('Se o email existir, enviámos instruções.')}
 async function busy(f,fn){const b=document.querySelector('#'+f+' .publish');b.disabled=true;try{await fn()}finally{b.disabled=false}}
 function auth(e){e.preventDefault();if(!sb){showToast('Falta configurar o Supabase.');return false}const g=id=>document.getElementById(id).value;
-if(AU.mode==='in'){const em=g('li-e').trim(),pw=g('li-p');const ok=[bad('li-e',EM.test(em)?'':'Indica um email válido.'),bad('li-p',pw.length>=8?'':'A palavra-passe tem pelo menos 8 caracteres.')].every(Boolean);if(ok)busy('f-in',async()=>{const{error}=await sb.auth.signInWithPassword({email:em,password:pw});if(error)showToast(errMsg(error))})}
-else{const n=g('su-n').trim(),u=g('su-u').trim().toLowerCase(),em=g('su-e').trim(),pw=g('su-p'),cf=g('su-c');const ok=[bad('su-n',n.length>=2?'':'Indica o teu nome.'),bad('su-u',/^[a-z0-9_]{3,20}$/.test(u)?'':'3 a 20 caracteres: letras minúsculas, números ou _.'),bad('su-e',EM.test(em)?'':'Indica um email válido.'),bad('su-p',pw.length>=8&&/[a-zA-Z]/.test(pw)&&/\d/.test(pw)?'':'Mínimo 8 caracteres, com letras e números.'),bad('su-c',cf&&cf===pw?'':'As palavras-passe não coincidem.'),bad('su-t',document.getElementById('su-t').checked?'':'Tens de aceitar os termos.')].every(Boolean);if(ok)busy('f-up',async()=>{const{data,error}=await sb.auth.signUp({email:em,password:pw,options:{data:{full_name:n,username:u}}});if(error)return showToast(errMsg(error));if(!data.session){showToast('Conta criada! Confirma o email para entrar.');amode('in')}})}
+if(AU.mode==='in'){const em=g('li-e').trim(),pw=g('li-p');AU.keep=document.getElementById('li-k').checked;const ok=[bad('li-e',EM.test(em)?'':'Indica um email válido.'),bad('li-p',pw.length>=8?'':'A palavra-passe tem pelo menos 8 caracteres.')].every(Boolean);if(ok)busy('f-in',async()=>{const{data:d,error}=await sb.auth.signInWithPassword({email:em,password:pw});if(error)showToast(errMsg(error));else if(d&&d.user&&d.user.id===ME.id)cancelAdd()})}
+else{const n=g('su-n').trim(),u=g('su-u').trim().toLowerCase(),em=g('su-e').trim(),pw=g('su-p'),cf=g('su-c');const ok=[bad('su-n',n.length>=2?'':'Indica o teu nome.'),bad('su-u',/^[a-z0-9_]{3,20}$/.test(u)?'':'3 a 20 caracteres: letras minúsculas, números ou _.'),bad('su-e',EM.test(em)?'':'Indica um email válido.'),bad('su-p',pw.length>=8&&/[a-zA-Z]/.test(pw)&&/\d/.test(pw)?'':'Mínimo 8 caracteres, com letras e números.'),bad('su-c',cf&&cf===pw?'':'As palavras-passe não coincidem.'),bad('su-t',document.getElementById('su-t').checked?'':'Tens de aceitar os termos.')].every(Boolean);if(ok)busy('f-up',async()=>{AU.keep=true;const{data,error}=await sb.auth.signUp({email:em,password:pw,options:{data:{full_name:n,username:u}}});if(error)return showToast(errMsg(error));if(!data.session){showToast('Conta criada! Confirma o email para entrar.');amode('in')}})}
 return false}
 </script>
 </body>

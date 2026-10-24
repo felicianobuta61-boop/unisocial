@@ -523,12 +523,12 @@ function markSeen(id){try{const s=seenSet();if(s.has(id))return;s.add(id);localS
 function unseen(aid){const s=seenSet(),g=STORIES.get(aid);return !!g&&g.items.some(x=>!s.has(x.id))}
 function storyOrder(){
   const ids=[...STORIES.keys()].filter(x=>x!==ME.id),late=a=>new Date(STORIES.get(a).items.slice(-1)[0].created_at);
-  ids.sort((a,b)=>{const ua=unseen(a),ub=unseen(b);if(ua!==ub)return ua?-1:1;return late(b)-late(a)});
+  ids.sort((a,b)=>{const ua=unseen(a),ub=unseen(b);if(ua!==ub)return ua?-1:1;const fa=FOLLOWING.has(a),fb=FOLLOWING.has(b);if(fa!==fb)return fa?-1:1;return late(b)-late(a)});
   return STORIES.has(ME.id)?[ME.id,...ids]:ids
 }
 async function loadStories(){
   if(!sb||!ME.id)return;
-  const{data,error}=await sb.from('stories').select('id,author_id,image_url,text,bg,created_at,expires_at').gt('expires_at',new Date().toISOString()).order('created_at',{ascending:true});
+  const{data,error}=await sb.from('stories').select('id,author_id,image_url,text,bg,created_at,expires_at').gt('expires_at',new Date().toISOString()).order('created_at',{ascending:true}).limit(300);
   if(error){console.warn('Não foi possível carregar as histórias:',error);return}
   const ids=[...new Set(data.map(x=>x.author_id))];let pm=new Map();
   if(ids.length){const{data:pr}=await sb.from('profiles').select('id,username,full_name,avatar_url').in('id',ids);pm=new Map((pr||[]).map(x=>[x.id,x]))}
@@ -555,7 +555,7 @@ function renderStories(){paintMyTile();paintRings();
   const sl=document.getElementById('slist');
   if(sl){
     const o=storyOrder();
-    sl.innerHTML=o.length?'<div class="widget">'+o.map(id=>{const g=STORIES.get(id),n=g.items.length;return `<div class="contact" style="cursor:pointer" onclick="openStory('${esc(id)}')">${avHTML(g.u.avatar_url,g.u.full_name||'?',unseen(id)?'green':'blue')}<div class="contact-info"><strong>${esc(id===ME.id?'As tuas histórias':(g.u.full_name||'Utilizador'))}</strong><small>${n} ${n>1?'histórias':'história'} · ${ago(g.items[n-1].created_at)}</small></div></div>`}).join('')+'</div>':emp('Ainda não há histórias.<br>Segue pessoas ou cria a tua!')
+    sl.innerHTML=o.length?'<div class="widget">'+o.map(id=>{const g=STORIES.get(id),n=g.items.length;return `<div class="contact" style="cursor:pointer" onclick="openStory('${esc(id)}')">${avHTML(g.u.avatar_url,g.u.full_name||'?',unseen(id)?'green':'blue')}<div class="contact-info"><strong>${esc(id===ME.id?'As tuas histórias':(g.u.full_name||'Utilizador'))}</strong><small>${n} ${n>1?'histórias':'história'} · ${ago(g.items[n-1].created_at)}</small></div></div>`}).join('')+'</div>':emp('Ainda não há histórias.<br>Cria a primeira!')
   }
 }
 R.Histórias=()=>`<div class="widget"><button class="publish" style="width:100%" onclick="scOpen()">＋ Criar história</button></div><h2 class="h2">Histórias</h2><div id="slist"></div>`;

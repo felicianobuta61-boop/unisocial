@@ -195,6 +195,21 @@ const tiles=(a,ico='',pre='')=>'<div class="grid">'+a.map((t,i)=>`<div class="ti
 const DB={posts:[],groups:[]};
 let FEED='all',FOLLOWING=new Set(),CHAT={uid:null,people:new Map()},msgChan=null;
 let presenceChan=null, ONLINE_USERS=new Map(), presenceStarting=false;
+const PRESENCE_GRACE_MS=120000, PRESENCE_GRACE_TIMERS=new Map();
+function syncPresenceState(ch){
+  const state=ch.presenceState(), actual=new Map();
+  Object.values(state).flat().forEach(v=>{if(v&&v.user_id&&v.user_id!==ME.id)actual.set(v.user_id,v)});
+  // Preserve the last known status for up to two minutes after a user disconnects.
+  for(const [id,u] of actual){const timer=PRESENCE_GRACE_TIMERS.get(id);if(timer){clearTimeout(timer);PRESENCE_GRACE_TIMERS.delete(id)}ONLINE_USERS.set(id,u)}
+  for(const [id,u] of [...ONLINE_USERS.entries()]){
+    if(actual.has(id)||PRESENCE_GRACE_TIMERS.has(id))continue;
+    const timer=setTimeout(()=>{PRESENCE_GRACE_TIMERS.delete(id);ONLINE_USERS.delete(id);paintPresenceUI()},PRESENCE_GRACE_MS);
+    PRESENCE_GRACE_TIMERS.set(id,timer);
+  }
+  paintPresenceUI();
+}
+function clearPresenceGrace(){for(const t of PRESENCE_GRACE_TIMERS.values())clearTimeout(t);PRESENCE_GRACE_TIMERS.clear()}
+
 const emp=t=>`<div class="widget empty">${t}</div>`;
 const tags=()=>{const m={};DB.posts.forEach(p=>(p.t.match(/#[\p{L}\d_]+/gu)||[]).forEach(h=>m[h]=(m[h]||0)+1));return Object.entries(m).sort((x,y)=>y[1]-x[1]).slice(0,5)};
 const trendHTML=()=>{const t=tags();return t.length?t.map((x,i)=>`<div class="trend"><div class="number">0${i+1}</div><div><strong>${esc(x[0])}</strong><small>${x[1]} publicaç${x[1]>1?'ões':'ão'}</small></div></div>`).join(''):'<p class="small" style="margin:0">Ainda sem tendências. Usa #hashtags nas publicações.</p>'};
@@ -332,7 +347,7 @@ async function toggleFollow(uid){
   loadStories();
 }
 function onlineVisibility(){try{return localStorage.getItem('uni_show_online')!=='false'}catch(e){return true}}
-function setOnlineVisibility(on){try{localStorage.setItem('uni_show_online',on?'true':'false')}catch(e){}if(on){startPresence()}else{stopPresence();ONLINE_USERS.clear();paintPresenceUI()}showToast(on?'O teu estado online está visível.':'O teu estado online está oculto.')}
+function setOnlineVisibility(on){try{localStorage.setItem('uni_show_online',on?'true':'false')}catch(e){}if(on){startPresence()}else{stopPresence();clearPresenceGrace();ONLINE_USERS.clear();paintPresenceUI()}showToast(on?'O teu estado online está visível.':'O teu estado online está oculto.')}
 function isOnline(uid){return onlineVisibility()&&ONLINE_USERS.has(uid)}
 function presenceAvatar(uid,name,avatar,cls='blue'){return `<span class="avatar-presence">${avHTML(avatar,name,cls,'',uid)}${isOnline(uid)?'<span class="status-dot" title="Online"></span>':''}</span>`}
 async function startPresence(){
@@ -340,9 +355,9 @@ async function startPresence(){
   presenceStarting=true;
   try{
     const ch=sb.channel('unisocial-presence',{config:{presence:{key:ME.id}}});
-    ch.on('presence',{event:'sync'},()=>{const state=ch.presenceState(),next=new Map();Object.values(state).flat().forEach(v=>{if(v&&v.user_id&&v.user_id!==ME.id)next.set(v.user_id,v)});ONLINE_USERS=next;paintPresenceUI()});
-    ch.on('presence',{event:'join'},()=>{const state=ch.presenceState(),next=new Map();Object.values(state).flat().forEach(v=>{if(v&&v.user_id&&v.user_id!==ME.id)next.set(v.user_id,v)});ONLINE_USERS=next;paintPresenceUI()});
-    ch.on('presence',{event:'leave'},()=>{const state=ch.presenceState(),next=new Map();Object.values(state).flat().forEach(v=>{if(v&&v.user_id&&v.user_id!==ME.id)next.set(v.user_id,v)});ONLINE_USERS=next;paintPresenceUI()});
+    ch.on('presence',{event:'sync'},()=>syncPresenceState(ch));
+    ch.on('presence',{event:'join'},()=>syncPresenceState(ch));
+    ch.on('presence',{event:'leave'},()=>syncPresenceState(ch));
     ch.subscribe(async status=>{if(status==='SUBSCRIBED'){if(!ME.id||!onlineVisibility()){try{await sb.removeChannel(ch)}catch(e){}return}presenceChan=ch;try{await ch.track({user_id:ME.id,name:ME.n,username:ME.u,avatar_url:ME.avatar_url||null,online_at:new Date().toISOString()})}catch(e){console.warn('Não foi possível publicar o estado online:',e)}}else if(status==='CHANNEL_ERROR'||status==='TIMED_OUT'){console.warn('Estado online temporariamente indisponível:',status)}});
   }catch(e){console.warn('Presença online indisponível:',e)}finally{presenceStarting=false}
 }
@@ -837,8 +852,8 @@ async function notifyMsg(m){
   if(!n&&sb){const{data}=await sb.from('profiles').select('id,username,full_name,avatar_url').eq('id',m.sender_id).maybeSingle();if(data){CHAT.people.set(data.id,data);n=data}}
   sysNotify(n?n.full_name:'Nova mensagem',(m.body||'').slice(0,100),'msg-'+m.sender_id,{uid:m.sender_id})
 }
-async function onSession(session){if(!session){await stopPresence();ONLINE_USERS.clear();const was=ME.id;ME.id=null;resetUserState();AU.showForm=false;renderSaved();DB.posts=[];FOLLOWING=new Set();FEED='all';CHAT={uid:null,people:new Map()};if(msgChan&&sb){sb.removeChannel(msgChan);msgChan=null}setBadge(0);document.getElementById('feedMode').textContent='Todos ⌄';if(chan&&sb){sb.removeChannel(chan);chan=null}document.getElementById('feed').querySelectorAll('.post').forEach(e=>e.remove());refresh();document.body.classList.add('guest');amode('in');scrollTo(0,0);if(was)showToast('Sessão terminada.');return}
-if(ME.id&&ME.id!==session.user.id){await stopPresence();ONLINE_USERS.clear();resetUserState()}ME.id=session.user.id;const{data:p}=await sb.from('profiles').select('username,full_name,bio,avatar_url,note,note_at').eq('id',ME.id).maybeSingle();const m=session.user.user_metadata||{};Object.assign(ME,{bio:p?.bio||'',avatar_url:p?.avatar_url||null,note:p?.note||null,note_at:p?.note_at||null});enter(p?.full_name||m.full_name||'Utilizador',p?.username||m.username||'utilizador');await loadFollows();startPresence();paintPresenceUI();loadFeed();subMsgs();updUnread();loadStories();nbShow();if(!chan)chan=sb.channel('feed').on('postgres_changes',{event:'*',schema:'public',table:'posts'},()=>loadFeed()).subscribe()}
+async function onSession(session){if(!session){await stopPresence();clearPresenceGrace();ONLINE_USERS.clear();const was=ME.id;ME.id=null;resetUserState();AU.showForm=false;renderSaved();DB.posts=[];FOLLOWING=new Set();FEED='all';CHAT={uid:null,people:new Map()};if(msgChan&&sb){sb.removeChannel(msgChan);msgChan=null}setBadge(0);document.getElementById('feedMode').textContent='Todos ⌄';if(chan&&sb){sb.removeChannel(chan);chan=null}document.getElementById('feed').querySelectorAll('.post').forEach(e=>e.remove());refresh();document.body.classList.add('guest');amode('in');scrollTo(0,0);if(was)showToast('Sessão terminada.');return}
+if(ME.id&&ME.id!==session.user.id){await stopPresence();clearPresenceGrace();ONLINE_USERS.clear();resetUserState()}ME.id=session.user.id;const{data:p}=await sb.from('profiles').select('username,full_name,bio,avatar_url,note,note_at').eq('id',ME.id).maybeSingle();const m=session.user.user_metadata||{};Object.assign(ME,{bio:p?.bio||'',avatar_url:p?.avatar_url||null,note:p?.note||null,note_at:p?.note_at||null});enter(p?.full_name||m.full_name||'Utilizador',p?.username||m.username||'utilizador');await loadFollows();startPresence();paintPresenceUI();loadFeed();subMsgs();updUnread();loadStories();nbShow();if(!chan)chan=sb.channel('feed').on('postgres_changes',{event:'*',schema:'public',table:'posts'},()=>loadFeed()).subscribe()}
 if(sb)sb.auth.onAuthStateChange((ev,session)=>{if(session&&(ev==='TOKEN_REFRESHED'||ev==='SIGNED_IN'||ev==='INITIAL_SESSION'))saveTokens(session);if(ev==='SIGNED_IN'&&session&&ME.id===session.user.id)return;if(ev==='INITIAL_SESSION'||ev==='SIGNED_IN'||ev==='SIGNED_OUT')setTimeout(()=>onSession(session),0)});
 else{const n=document.getElementById('authnote');n.textContent='Falta configurar o Supabase no código (SUPABASE_URL e SUPABASE_ANON_KEY).';n.style.color='var(--pink)'}
 renderSaved();initSW();initPreferences();

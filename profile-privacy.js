@@ -19,6 +19,9 @@
         const at = path.indexOf(marker);
         if (at >= 0) return decodeURIComponent(path.slice(at + marker.length));
       }
+      if (!/^[a-z][a-z\d+.-]*:/i.test(value) && !value.startsWith('/')) {
+        return decodeURIComponent(value.split(/[?#]/, 1)[0]);
+      }
     } catch (error) {
       console.warn('URL de Storage inválida.');
     }

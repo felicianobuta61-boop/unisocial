@@ -1042,5 +1042,6 @@ function qzEnd(){let best=0;try{best=+localStorage.getItem('uni_qz_best')||0;if(
 async function qzShare(){const text='Fiz '+QZ.s+' pontos no Quiz de Culturas de Angola no UniSocial! Consegues ganhar-me?',url=location.href.split('#')[0];try{if(navigator.share)await navigator.share({text,url});else{await navigator.clipboard.writeText(text+' '+url);showToast('Texto copiado!')}}catch(e){}}
 </script>
 <div style="text-align:center;font-size:12px;color:var(--muted);padding:18px 12px 96px"><a href="termos.html" style="color:inherit">Termos</a> · <a href="privacidade.html" style="color:inherit">Privacidade</a> · <a href="anunciar.html" style="color:inherit">Anunciar aqui</a></div>
+<script src="./profile-privacy.js"></script>
 </body>
 </html>
